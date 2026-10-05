@@ -61,12 +61,23 @@ describe('MotionCheck', () => {
     expect(screen.getByText('0')).toBeTruthy();
   });
 
-  it('toggles the checkmark and replays', async () => {
+  it('toggles the checkmark', async () => {
     useSettings.getState().update({ reduceMotionOverride: 'on' });
     await renderWithTheme(<MotionCheck />);
     await fireEvent.press(screen.getByRole('button', { name: m.toggleCheck }));
+    expect(screen.getByRole('button', { name: m.toggleCheck })).toBeTruthy();
+  });
+
+  it('replay remounts every demo and resets the toggles', async () => {
+    useSettings.getState().update({ reduceMotionOverride: 'on' });
+    await renderWithTheme(<MotionCheck />);
+    await fireEvent.press(screen.getByRole('button', { name: m.toggleCollapse }));
+    await fireEvent.press(screen.getByRole('button', { name: m.changeNumber }));
+    expect(screen.getByText(m.details)).toBeTruthy();
+    expect(screen.getByText('100')).toBeTruthy();
     await fireEvent.press(screen.getByRole('button', { name: m.replay }));
-    expect(screen.getByText(m.fade)).toBeTruthy();
+    expect(screen.queryByText(m.details)).toBeNull();
+    expect(screen.getByText('0')).toBeTruthy();
     expect(screen.getByText(m.staggerItem(5))).toBeTruthy();
   });
 });

@@ -21,6 +21,10 @@ export default function RootLayout() {
   const [splashDone, setSplashDone] = useState(false);
 
   // Phase 2 adds migrations to this readiness check.
+  useEffect(() => {
+    if (__DEV__ && fontError) console.warn('Trek: icon fonts failed to load', fontError);
+  }, [fontError]);
+
   const ready = fontsLoaded || fontError != null;
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();

@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import { fireEvent, screen } from '@testing-library/react-native';
 import { strings } from '../../../strings/en';
 import { renderWithTheme } from '../../../test/renderWithTheme';
@@ -48,6 +49,12 @@ describe('DesignPreviewScreen', () => {
     await renderWithTheme(<DesignPreviewScreen screen="lock" mode="light" />);
     await fireEvent.press(screen.getByRole('button', { name: strings.navigation.back }));
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('pads the back row by the top safe-area inset', async () => {
+    await renderWithTheme(<DesignPreviewScreen screen="lock" mode="light" />);
+    const row = screen.getByRole('button', { name: strings.navigation.back }).parent;
+    expect(StyleSheet.flatten(row?.props.style).paddingTop).toBe(47);
   });
 
   it('redirects unknown keys to the list', async () => {

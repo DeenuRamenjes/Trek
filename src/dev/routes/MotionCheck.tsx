@@ -30,11 +30,18 @@ export function MotionCheck() {
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
 
+  const replay = () => {
+    setBig(false);
+    setOpen(false);
+    setChecked(false);
+    setRun((n) => n + 1);
+  };
+
   return (
     <Screen>
       <AppText variant="display">{m.title}</AppText>
       <AppText tone="secondary">{reduce ? m.reduceMotionOn : m.reduceMotionOff}</AppText>
-      <Button label={m.replay} icon="refresh" onPress={() => setRun((n) => n + 1)} />
+      <Button label={m.replay} icon="refresh" onPress={replay} />
 
       <View key={run} style={styles.group}>
         <AppText variant="title">{m.presets}</AppText>
@@ -62,7 +69,6 @@ export function MotionCheck() {
             </Card>
           ))}
         </Stagger>
-      </View>
 
       <Card>
         <PressableScale accessibilityLabel={m.press} style={[styles.press, { backgroundColor: colors.accent }]}>
@@ -102,12 +108,13 @@ export function MotionCheck() {
         <AppText variant="title">{m.mark}</AppText>
         <TrekMark size={64} color={colors.accent} />
       </Card>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  group: { gap: spacing.sm },
+  group: { gap: spacing.md },
   press: {
     minHeight: minTapTarget,
     borderRadius: radii.pill,
