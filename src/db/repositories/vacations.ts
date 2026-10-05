@@ -1,6 +1,8 @@
 import { asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
-import { addDaysToDate, newId, nowIso } from '../ids';
+import { withTransaction } from '../transaction';
+import { addDaysToDate } from '../dates';
+import { newId, nowIso } from '../ids';
 import { vacationGoals, vacations, type Vacation } from '../schema';
 
 export type VacationInput = {
@@ -20,7 +22,7 @@ async function writeGoalIds(tx: Pick<TrekDb, 'insert' | 'delete'>, vacationId: s
 export async function createVacation(db: TrekDb, input: VacationInput): Promise<VacationWithGoals> {
   const now = nowIso();
   const id = newId();
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     await tx.insert(vacations).values({
       id,
       startDate: input.startDate,
@@ -37,7 +39,7 @@ export async function createVacation(db: TrekDb, input: VacationInput): Promise<
 
 export async function updateVacation(db: TrekDb, id: string, patch: Partial<VacationInput>): Promise<void> {
   const { goalIds, ...rest } = patch;
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     await tx.update(vacations).set({ ...rest, updatedAt: nowIso() }).where(eq(vacations.id, id));
     if (patch.scope === 'all') await writeGoalIds(tx, id, []);
     else if (goalIds) await writeGoalIds(tx, id, goalIds);

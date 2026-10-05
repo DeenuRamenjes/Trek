@@ -1,5 +1,6 @@
 import { asc, eq, isNull } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
 import { goalScheduleVersions, goalSlots, goals, reminders, type Goal } from '../schema';
 
@@ -20,7 +21,7 @@ export async function createGoal(db: TrekDb, input: GoalInput, today: string): P
   const now = nowIso();
   const id = newId();
   const startDate = input.startDate ?? today;
-  return db.transaction(async (tx) => {
+  return withTransaction(db, async (tx) => {
     const defined = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
     await tx.insert(goals).values({ ...defined, name: input.name, id, startDate, createdAt: now, updatedAt: now });
     await tx.insert(goalScheduleVersions).values({
@@ -57,7 +58,7 @@ export async function archiveGoal(db: TrekDb, id: string, at: string = nowIso())
 
 export async function reorderGoals(db: TrekDb, ids: string[]): Promise<void> {
   const now = nowIso();
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     for (let i = 0; i < ids.length; i++) {
       await tx.update(goals).set({ sortOrder: i, updatedAt: now }).where(eq(goals.id, ids[i]));
     }
@@ -71,7 +72,7 @@ export async function deleteGoal(db: TrekDb, id: string): Promise<void> {
 /** Copies the goal, its current schedule version (latest effective on or before today), slots and reminders. */
 export async function duplicateGoal(db: TrekDb, id: string, today: string): Promise<Goal> {
   const now = nowIso();
-  return db.transaction(async (tx) => {
+  return withTransaction(db, async (tx) => {
     const src = (await tx.select().from(goals).where(eq(goals.id, id)))[0];
     if (!src) throw new Error(`Goal not found: ${id}`);
     const newGoalId = newId();
@@ -89,6 +90,7 @@ export async function duplicateGoal(db: TrekDb, id: string, today: string): Prom
       .where(eq(goalScheduleVersions.goalId, id))
       .orderBy(asc(goalScheduleVersions.effectiveFrom));
     const current = [...versions].reverse().find((v) => v.effectiveFrom <= today) ?? versions[0];
+    const slotIdMap = new Map<string, string>();
     if (current) {
       const versionId = newId();
       await tx.insert(goalScheduleVersions).values({
@@ -100,12 +102,14 @@ export async function duplicateGoal(db: TrekDb, id: string, today: string): Prom
       });
       const slots = await tx.select().from(goalSlots).where(eq(goalSlots.scheduleVersionId, current.id));
       for (const s of slots) {
-        await tx.insert(goalSlots).values({ ...s, id: newId(), scheduleVersionId: versionId });
+        const slotId = newId();
+        slotIdMap.set(s.id, slotId);
+        await tx.insert(goalSlots).values({ ...s, id: slotId, scheduleVersionId: versionId });
       }
     }
     const rems = await tx.select().from(reminders).where(eq(reminders.goalId, id));
     for (const r of rems) {
-      await tx.insert(reminders).values({ ...r, id: newId(), goalId: newGoalId, slotId: null });
+      await tx.insert(reminders).values({ ...r, id: newId(), goalId: newGoalId, slotId: r.slotId ? (slotIdMap.get(r.slotId) ?? null) : null });
     }
     return (await tx.select().from(goals).where(eq(goals.id, newGoalId)))[0];
   });

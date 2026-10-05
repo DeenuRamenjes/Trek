@@ -6,11 +6,17 @@ const TODAY = '2026-10-05';
 let db: TrekDb;
 let raw: ReturnType<typeof createTestDb>['raw'];
 
+const at = (n: number) => new Date(Date.UTC(2026, 9, 5, 12, 0, n));
+const tick = (n: number) => jest.setSystemTime(at(n));
+
 beforeEach(() => {
+  jest.useFakeTimers({ now: at(0) });
   const t = createTestDb();
   db = t.db as unknown as TrekDb;
   raw = t.raw;
 });
+
+afterEach(() => jest.useRealTimers());
 
 const count = (table: string) => (raw.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number }).c;
 
@@ -34,10 +40,11 @@ describe('goals', () => {
   it('update, get, archive, list', async () => {
     const a = await r.createGoal(db, { name: 'A' }, TODAY);
     const b = await r.createGoal(db, { name: 'B' }, TODAY);
+    tick(1);
     await r.updateGoal(db, a.id, { name: 'A2', targetValue: 5 });
     const got = await r.getGoal(db, a.id);
     expect(got).toMatchObject({ name: 'A2', targetValue: 5 });
-    expect(got!.updatedAt >= a.updatedAt).toBe(true);
+    expect(got!.updatedAt > a.updatedAt).toBe(true);
     await r.archiveGoal(db, b.id, '2026-10-05T00:00:00.000Z');
     expect((await r.listGoals(db)).map((g) => g.id)).toEqual([a.id]);
     expect(await r.listGoals(db, { includeArchived: true })).toHaveLength(2);
@@ -58,7 +65,9 @@ describe('goals', () => {
       { weekday: 1, time: '07:00', label: 'am' },
       { weekday: 3, time: '18:30' },
     ]);
-    await r.setReminders(db, g.id, [{ weekday: 1, time: '06:45', offsetMin: 5 }]);
+    const cur = (await r.listScheduleVersions(db, g.id))[1];
+    const [curSlot] = await r.listSlots(db, cur.id);
+    await r.setReminders(db, g.id, [{ weekday: 1, time: '06:45', offsetMin: 5, slotId: curSlot.id }]);
     await r.pauseGoal(db, g.id, '2026-07-01');
     const copy = await r.duplicateGoal(db, g.id, TODAY);
     expect(copy.id).not.toBe(g.id);
@@ -71,6 +80,9 @@ describe('goals', () => {
     const rems = await r.listReminders(db, copy.id);
     expect(rems).toHaveLength(1);
     expect(rems[0]).toMatchObject({ weekday: 1, time: '06:45', offsetMin: 5, enabled: true });
+    const [newSlot] = await r.listSlots(db, versions[0].id);
+    expect(rems[0].slotId).toBe(newSlot.id);
+    expect(newSlot.id).not.toBe(curSlot.id);
     expect(rems[0].id).not.toBe((await r.listReminders(db, g.id))[0].id);
     expect(await r.listPauses(db, copy.id)).toHaveLength(0);
   });
@@ -109,10 +121,17 @@ describe('schedules', () => {
 describe('pauses', () => {
   it('pause opens a row, resume closes it the day before', async () => {
     const g = await r.createGoal(db, { name: 'A', startDate: '2026-01-01' }, TODAY);
+    tick(1);
     await r.pauseGoal(db, g.id, '2026-10-01');
     expect((await r.getGoal(db, g.id))!.pausedAt).not.toBeNull();
-    expect(await r.listPauses(db, g.id)).toMatchObject([{ startDate: '2026-10-01', endDate: null }]);
+    expect((await r.getGoal(db, g.id))!.updatedAt).toBe(at(1).toISOString());
+    const [open] = await r.listPauses(db, g.id);
+    expect(open).toMatchObject({ startDate: '2026-10-01', endDate: null });
+    tick(2);
     await r.resumeGoal(db, g.id, '2026-10-05');
+    expect((await r.getGoal(db, g.id))!.updatedAt).toBe(at(2).toISOString());
+    expect((await r.listPauses(db, g.id))[0].updatedAt).toBe(at(2).toISOString());
+    expect((await r.listPauses(db, g.id))[0].updatedAt > open.updatedAt).toBe(true);
     expect((await r.getGoal(db, g.id))!.pausedAt).toBeNull();
     expect(await r.listPauses(db, g.id)).toMatchObject([{ startDate: '2026-10-01', endDate: '2026-10-04' }]);
   });
@@ -152,7 +171,10 @@ describe('groups', () => {
     const g2 = await r.createGoal(db, { name: 'G2' }, TODAY);
     const a = await r.createGroup(db, { name: 'A', color: '#111111', icon: 'star' });
     const b = await r.createGroup(db, { name: 'B', color: '#222222', icon: 'heart' });
+    tick(1);
     await r.updateGroup(db, a.id, { name: 'A2' });
+    expect((await r.getGroup(db, a.id))!.updatedAt).toBe(at(1).toISOString());
+    tick(2);
     expect((await r.getGroup(db, a.id))!.name).toBe('A2');
     await r.reorderGroups(db, [b.id, a.id]);
     expect((await r.listGroups(db)).map((x) => x.name)).toEqual(['B', 'A2']);
@@ -172,9 +194,16 @@ describe('logs', () => {
   it('upsert on (goal, date, null slot) updates instead of duplicating, keeping loggedAt', async () => {
     const g = await r.createGoal(db, { name: 'A' }, TODAY);
     const first = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 1, status: 'partial', note: 'x' });
+    tick(1);
     const second = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 3, status: 'done' });
     expect(second.id).toBe(first.id);
-    expect(second).toMatchObject({ value: 3, status: 'done', note: null, loggedAt: first.loggedAt });
+    expect(second).toMatchObject({ value: 3, status: 'done', note: 'x', loggedAt: first.loggedAt });
+    expect(second.updatedAt).toBe(at(1).toISOString());
+    expect(second.updatedAt > first.updatedAt).toBe(true);
+    const cleared = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 3, status: 'done', note: null });
+    expect(cleared.note).toBeNull();
+    const reset = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 3, status: 'done', note: 'y' });
+    expect(reset.note).toBe('y');
     expect(count('logs')).toBe(1);
   });
 
@@ -212,7 +241,9 @@ describe('vacations', () => {
     expect(all).toMatchObject({ scope: 'all', goalIds: [], note: 'trip' });
     const sel = await r.createVacation(db, { startDate: '2026-12-01', endDate: '2026-12-10', scope: 'selected', goalIds: [g.id] });
     expect(sel.goalIds).toEqual([g.id]);
+    tick(1);
     await r.updateVacation(db, sel.id, { endDate: '2026-12-12', note: 'n' });
+    expect((await r.listVacations(db))[1].updatedAt).toBe(at(1).toISOString());
     expect((await r.listVacations(db)).map((v) => v.endDate)).toEqual(['2026-08-10', '2026-12-12']);
     await r.updateVacation(db, sel.id, { scope: 'all' });
     expect((await r.listVacations(db))[1].goalIds).toEqual([]);

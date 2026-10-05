@@ -1,5 +1,6 @@
 import { and, asc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
 import { logs, type Log } from '../schema';
 
@@ -12,11 +13,11 @@ export type LogInput = {
   note?: string | null;
 };
 
-/** Insert, or update the row for (goalId, date, slotId); null slotId counts as one value. loggedAt stays from the first insert. */
+/** Insert, or update the row for (goalId, date, slotId); null slotId counts as one value. loggedAt stays from the first insert. On update an undefined note keeps the existing one; null clears it. */
 export async function upsertLog(db: TrekDb, input: LogInput): Promise<Log> {
   const now = nowIso();
   const slotId = input.slotId ?? null;
-  return db.transaction(async (tx) => {
+  return withTransaction(db, async (tx) => {
     const key = and(
       eq(logs.goalId, input.goalId),
       eq(logs.date, input.date),
@@ -26,7 +27,7 @@ export async function upsertLog(db: TrekDb, input: LogInput): Promise<Log> {
     if (existing) {
       await tx
         .update(logs)
-        .set({ value: input.value, status: input.status, note: input.note ?? null, updatedAt: now })
+        .set({ value: input.value, status: input.status, note: input.note === undefined ? existing.note : input.note, updatedAt: now })
         .where(eq(logs.id, existing.id));
       return (await tx.select().from(logs).where(eq(logs.id, existing.id)))[0];
     }

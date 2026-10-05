@@ -1,5 +1,6 @@
 import { asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
 import { groupGoals, groups, type Group, type GroupGoal } from '../schema';
 
@@ -30,7 +31,7 @@ export async function deleteGroup(db: TrekDb, id: string): Promise<void> {
 
 export async function reorderGroups(db: TrekDb, ids: string[]): Promise<void> {
   const now = nowIso();
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     for (let i = 0; i < ids.length; i++) {
       await tx.update(groups).set({ sortOrder: i, updatedAt: now }).where(eq(groups.id, ids[i]));
     }
@@ -38,7 +39,7 @@ export async function reorderGroups(db: TrekDb, ids: string[]): Promise<void> {
 }
 
 export async function setGroupGoals(db: TrekDb, groupId: string, goalIds: string[]): Promise<void> {
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     await tx.delete(groupGoals).where(eq(groupGoals.groupId, groupId));
     for (const goalId of new Set(goalIds)) await tx.insert(groupGoals).values({ groupId, goalId });
     await tx.update(groups).set({ updatedAt: nowIso() }).where(eq(groups.id, groupId));

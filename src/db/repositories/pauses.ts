@@ -1,11 +1,13 @@
 import { and, asc, eq, isNull } from 'drizzle-orm';
 import type { TrekDb } from '../client';
-import { addDaysToDate, newId, nowIso } from '../ids';
+import { withTransaction } from '../transaction';
+import { addDaysToDate } from '../dates';
+import { newId, nowIso } from '../ids';
 import { goalPauses, goals, type GoalPause } from '../schema';
 
 export async function pauseGoal(db: TrekDb, goalId: string, date: string): Promise<void> {
   const now = nowIso();
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     await tx.update(goals).set({ pausedAt: now, updatedAt: now }).where(eq(goals.id, goalId));
     await tx.insert(goalPauses).values({ id: newId(), goalId, startDate: date, endDate: null, createdAt: now, updatedAt: now });
   });
@@ -14,7 +16,7 @@ export async function pauseGoal(db: TrekDb, goalId: string, date: string): Promi
 /** Closes the open pause with endDate = date - 1 day; deletes it when that is before its start. */
 export async function resumeGoal(db: TrekDb, goalId: string, date: string): Promise<void> {
   const now = nowIso();
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     const open = await tx.select().from(goalPauses).where(and(eq(goalPauses.goalId, goalId), isNull(goalPauses.endDate)));
     const end = addDaysToDate(date, -1);
     for (const p of open) {

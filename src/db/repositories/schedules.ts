@@ -1,5 +1,6 @@
 import { and, asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
 import { goalScheduleVersions, goalSlots, type ScheduleVersion, type Slot } from '../schema';
 
@@ -18,7 +19,7 @@ export async function addScheduleVersion(
   version: ScheduleVersionInput,
   slots: SlotInput[] = [],
 ): Promise<ScheduleVersion> {
-  return db.transaction(async (tx) => {
+  return withTransaction(db, async (tx) => {
     await tx
       .delete(goalScheduleVersions)
       .where(and(eq(goalScheduleVersions.goalId, goalId), eq(goalScheduleVersions.effectiveFrom, effectiveFrom)));

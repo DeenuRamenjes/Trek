@@ -1,12 +1,13 @@
 import { asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { withTransaction } from '../transaction';
 import { newId } from '../ids';
 import { reminders, type Reminder } from '../schema';
 
 export type ReminderInput = Pick<Reminder, 'weekday' | 'time'> & Partial<Pick<Reminder, 'slotId' | 'offsetMin' | 'enabled'>>;
 
 export async function setReminders(db: TrekDb, goalId: string, items: ReminderInput[]): Promise<void> {
-  await db.transaction(async (tx) => {
+  await withTransaction(db, async (tx) => {
     await tx.delete(reminders).where(eq(reminders.goalId, goalId));
     for (const r of items) {
       await tx.insert(reminders).values({
