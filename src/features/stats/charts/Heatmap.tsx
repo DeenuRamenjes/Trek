@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { parseDate } from '../../../domain/dates';
 import { strings } from '../../../strings/en';
-import { AppText, Card } from '../../../ui/components';
+import { AppText, Card, Icon } from '../../../ui/components';
 import { useSettings } from '../../settings/settingsStore';
 import { useTheme } from '../../../ui/ThemeProvider';
 import { chartSizes, spacing } from '../../../ui/tokens';
@@ -21,7 +21,8 @@ export function heatmapSummary(heatmap: StatsModel['heatmap']): string {
   const scored = heatmap.filter((h) => h.ratio !== null);
   const full = scored.filter((h) => (h.ratio ?? 0) >= 1).length;
   const missed = scored.filter((h) => h.ratio === 0).length;
-  return t.heatmapSummary(heatmap.length, scored.length, full, missed);
+  const vacation = heatmap.filter((h) => h.vacation).length;
+  return t.heatmapSummary(heatmap.length, scored.length, full, missed, vacation);
 }
 
 export function Heatmap({ model }: { model: StatsModel }) {
@@ -44,6 +45,15 @@ export function Heatmap({ model }: { model: StatsModel }) {
             const idx = i + lead;
             const x = Math.floor(idx / ROWS) * step;
             const y = (idx % ROWS) * step;
+            if (cell.ratio === null && cell.vacation) {
+              // Vacation: blue fill with a horizontal bar, so it is told apart from "not scored" by shape as well as color.
+              return (
+                <Group key={cell.date}>
+                  <Rect x={x} y={y} width={size} height={size} color={colors.status.vacation} opacity={0.4} />
+                  <Rect x={x} y={y + size / 2 - 0.5} width={size} height={1} color={colors.status.vacation} />
+                </Group>
+              );
+            }
             if (cell.ratio === null) {
               return <Rect key={cell.date} x={x} y={y} width={size} height={size} color={colors.surfaceMuted} />;
             }
@@ -65,6 +75,12 @@ export function Heatmap({ model }: { model: StatsModel }) {
         <LegendSwatch color={colors.surfaceMuted} label={t.legendNone} />
         <LegendSwatch color={colors.accent} label={t.legendDone} />
         <LegendSwatch color={colors.surface} border={colors.status.missed} label={t.legendMissed} crossed />
+        <View style={styles.legendItem}>
+          <Icon name="airplane" size={chartSizes.legendSwatch} color={colors.status.vacation} />
+          <AppText variant="caption" tone="secondary">
+            {t.legendVacation}
+          </AppText>
+        </View>
       </View>
     </Card>
   );

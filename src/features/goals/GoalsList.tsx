@@ -29,10 +29,11 @@ type RowProps = {
   index: number;
   onOpen: () => void;
   onMenu: () => void;
+  onHistory: () => void;
   onDragEnd: (from: number, to: number) => void;
 };
 
-function GoalRow({ goal, index, onOpen, onMenu, onDragEnd }: RowProps) {
+function GoalRow({ goal, index, onOpen, onMenu, onHistory, onDragEnd }: RowProps) {
   const { colors } = useTheme();
   const reduce = useReduceMotion();
   const y = useSharedValue(0);
@@ -83,6 +84,7 @@ function GoalRow({ goal, index, onOpen, onMenu, onDragEnd }: RowProps) {
             ) : null}
           </View>
         </OpenArea>
+        <IconButton icon="calendar-outline" accessibilityLabel={s.historyFor(goal.name)} onPress={onHistory} />
         <IconButton icon="ellipsis-horizontal" accessibilityLabel={s.rowActions(goal.name)} onPress={onMenu} />
       </Card>
     </Animated.View>
@@ -170,6 +172,7 @@ export function GoalsList() {
               index={index}
               onOpen={() => router.push(`/goal/${goal.id}`)}
               onMenu={() => setMenuId(goal.id)}
+              onHistory={() => router.push(`/goal/${goal.id}/history`)}
               onDragEnd={reorder}
             />
           ))}

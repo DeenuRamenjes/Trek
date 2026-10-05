@@ -23,8 +23,8 @@ export type StatsModel = {
   /** Unit of the goal holding the max: weeks for timesPerWeek goals, otherwise days. */
   currentStreakUnit: StreakUnit;
   bestStreakUnit: StreakUnit;
-  /** One cell per date in range; ratio is 0-1, or null when nothing was scored that day. */
-  heatmap: { date: string; ratio: number | null }[];
+  /** One cell per date in range; ratio is 0-1, or null when nothing was scored that day. `vacation` is set when nothing was scored because a vacation covered the day. */
+  heatmap: { date: string; ratio: number | null; vacation: boolean }[];
   weekly: { weekStart: string; percent: number }[];
   /** 7-day rolling completion percent, one point per date in range. */
   /** percent is null when the 7-day window had nothing scored. */
@@ -93,7 +93,7 @@ export function buildStatsModel(input: StatsInput): StatsModel {
     bestStreak: best.value,
     currentStreakUnit: cur.unit,
     bestStreakUnit: best.unit,
-    heatmap: heat.map((p) => ({ date: p.date, ratio: p.denominator > 0 ? p.credit / p.denominator : null })),
+    heatmap: heat.map((p) => ({ date: p.date, ratio: p.denominator > 0 ? p.credit / p.denominator : null, vacation: p.denominator === 0 && p.vacation > 0 })),
     weekly: weeklyBars(ctxs, logs, from, to, today, mode, weekStart).map((b) => ({ weekStart: b.weekStart, percent: b.percent })),
     trend,
     perGoal: ctxs.map((x, i) => ({ goalId: x.goal.id, name: x.goal.name, color: x.goal.color, percent: byGoal[i].percent })),

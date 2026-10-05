@@ -15,10 +15,11 @@ const model: StatsModel = {
   currentStreakUnit: 'days',
   bestStreakUnit: 'weeks',
   heatmap: [
-    { date: '2026-09-01', ratio: 1 },
-    { date: '2026-09-02', ratio: 0 },
-    { date: '2026-09-03', ratio: null },
-    { date: '2026-09-04', ratio: 0.5 },
+    { date: '2026-09-01', ratio: 1, vacation: false },
+    { date: '2026-09-02', ratio: 0, vacation: false },
+    { date: '2026-09-03', ratio: null, vacation: false },
+    { date: '2026-09-04', ratio: 0.5, vacation: false },
+    { date: '2026-09-05', ratio: null, vacation: true },
   ],
   weekly: [
     { weekStart: '2026-08-31', percent: 60 },
@@ -50,7 +51,7 @@ describe('stats charts', () => {
     const c = model.completion;
     expect(screen.getByLabelText(`${t.completionSummary(72)}. ${t.countsSummary(c.done, c.partial, c.skipped, c.vacation, c.missed)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.currentStreak}: ${t.days(4)}. ${t.bestStreak}: ${t.weeks(9)}`)).toBeTruthy();
-    expect(screen.getByLabelText(`${t.heatmap}. ${t.heatmapSummary(4, 3, 1, 1)}`)).toBeTruthy();
+    expect(screen.getByLabelText(`${t.heatmap}. ${t.heatmapSummary(5, 3, 1, 1, 1)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.weeklyBars}. ${t.weeklySummary(2, 80, 70)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.trend}. ${t.trendSummary(50, 70)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.perGoal}. ${t.perGoalItem('Reading', 90)}`)).toBeTruthy();

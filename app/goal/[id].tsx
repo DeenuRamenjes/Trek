@@ -27,5 +27,5 @@ export default function EditGoalScreen() {
   }, [db, id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!initial) return null;
-  return <GoalForm initial={initial} goalId={id} onSaved={() => router.back()} onCancel={() => router.back()} />;
+  return <GoalForm initial={initial} goalId={id} onSaved={() => router.back()} onCancel={() => router.back()} onOpenHistory={() => router.push(`/goal/${id}/history`)} />;
 }

@@ -34,6 +34,18 @@ describe('buildStatsModel fixtures', () => {
     expect(m.bestWeekday).not.toBeNull();
   });
 
+  it('flags vacation days in the heatmap', () => {
+    const v = mkCtx({
+      goal: mkGoal({ id: 'v', name: 'V' }),
+      versions: [mkVersion({ id: 'vv', goalId: 'v' })],
+      vacations: [{ id: 'x', startDate: '2026-01-06', endDate: '2026-01-07', scope: 'all', note: null, createdAt: '', updatedAt: '', goalIds: [] }],
+    });
+    const m = buildStatsModel({ ...input, contexts: [v], logs: [], goalIds: null });
+    expect(m.heatmap.find((h) => h.date === '2026-01-06')).toEqual({ date: '2026-01-06', ratio: null, vacation: true });
+    expect(m.heatmap.find((h) => h.date === '2026-01-08')?.vacation).toBe(false);
+    expect(m.heatmap.find((h) => h.date === '2026-01-04')?.vacation).toBe(false);
+  });
+
   it('respects the group filter', () => {
     const m = buildStatsModel({ ...input, goalIds: ['b'] });
     expect(m.perGoal.map((g) => g.goalId)).toEqual(['b']);

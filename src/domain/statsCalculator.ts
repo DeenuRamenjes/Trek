@@ -151,7 +151,7 @@ export function completion(
   return sum(allUnits(ctxs, logs, from, to, today, mode, weekStart));
 }
 
-export type DailyPoint = { date: string; credit: number; denominator: number; percent: number };
+export type DailyPoint = { date: string; credit: number; denominator: number; percent: number; vacation: number };
 
 /** One point per date in [from, to] (heatmap and trend). Weekly units land on the week's last day. */
 export function dailySeries(
@@ -163,16 +163,17 @@ export function dailySeries(
   mode: StatsMode,
   weekStart = 1,
 ): DailyPoint[] {
-  const byDate = new Map<string, { credit: number; denominator: number }>();
+  const byDate = new Map<string, { credit: number; denominator: number; vacation: number }>();
   for (const u of allUnits(ctxs, logs, from, to, today, mode, weekStart)) {
-    const p = byDate.get(u.date) ?? { credit: 0, denominator: 0 };
+    const p = byDate.get(u.date) ?? { credit: 0, denominator: 0, vacation: 0 };
     p.credit += u.credit;
     p.denominator += u.denominator;
+    p.vacation += u.vacation;
     byDate.set(u.date, p);
   }
   return eachDate(from, to).map((date) => {
-    const p = byDate.get(date) ?? { credit: 0, denominator: 0 };
-    return { date, credit: p.credit, denominator: p.denominator, percent: percentOf(p.credit, p.denominator) };
+    const p = byDate.get(date) ?? { credit: 0, denominator: 0, vacation: 0 };
+    return { date, credit: p.credit, denominator: p.denominator, percent: percentOf(p.credit, p.denominator), vacation: p.vacation };
   });
 }
 

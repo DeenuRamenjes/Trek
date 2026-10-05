@@ -28,11 +28,13 @@ type Props = {
   goalId?: string;
   onSaved: (goalId: string) => void;
   onCancel: () => void;
+  /** Editing only: opens the goal history calendar. */
+  onOpenHistory?: () => void;
 };
 
 const f = strings.goalForm;
 
-export function GoalForm({ initial, goalId, onSaved, onCancel }: Props) {
+export function GoalForm({ initial, goalId, onSaved, onCancel, onOpenHistory }: Props) {
   const { colors } = useTheme();
   const db = useDb();
   const { today } = useLogicalToday();
@@ -90,6 +92,11 @@ export function GoalForm({ initial, goalId, onSaved, onCancel }: Props) {
         <AppText variant="title" accessibilityRole="header">
           {editing ? f.editTitle : f.newTitle}
         </AppText>
+        {editing && onOpenHistory ? (
+          <View style={styles.historyButton}>
+            <Button label={strings.history.title} variant="plain" icon="calendar-outline" onPress={onOpenHistory} />
+          </View>
+        ) : null}
       </View>
       <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <TextInput
@@ -136,6 +143,7 @@ export function GoalForm({ initial, goalId, onSaved, onCancel }: Props) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  historyButton: { marginLeft: 'auto' },
   content: { gap: spacing.md, paddingBottom: spacing.md },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   input: { minHeight: 56, borderRadius: radii.md, borderWidth: 1, paddingHorizontal: spacing.md },
