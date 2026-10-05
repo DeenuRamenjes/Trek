@@ -23,7 +23,7 @@
 
 ## Phase 2 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
-- `npx jest`: `Test Suites: 23 passed, 23 total`; `Tests: 257 passed, 257 total`; `Snapshots: 1 passed, 1 total`.
+- `npx jest`: `Test Suites: 23 passed, 23 total`; `Tests: 258 passed, 258 total`; `Snapshots: 1 passed, 1 total`.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist`: `› ios bundles (1):` and `Exported: dist`, exit 0.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist`: `› android bundles (1):` and `Exported: dist`, exit 0.
 - `dist` was removed after each export run.
@@ -34,6 +34,12 @@
 - The `logs` unique index on `(goal_id, date, coalesce(slot_id, ''))` lives in custom migration 0001, not in `schema.ts`, because drizzle-kit cannot express it.
 - The schema is frozen after Phase 2; further changes need an approved new migration.
 - `seedDemoData(db, { today, random })` is deterministic (mulberry32 seed 42, ids derived from the PRNG). Dev-only "Seed demo data" button on the Settings developer card.
+- `goals.targetValue`, `logs.value` and `pending_actions.value` are `real`, so value goals and fractional durations keep decimals. No DB had shipped, so `0000_init` and its snapshots were amended in place (custom 0001 and the journal are unchanged); `drizzle-kit generate` reports no pending changes.
+- Tables without `updatedAt` (slots, schedule versions, reminders, group_goals, vacation_goals) follow their parent's `updatedAt` in the Phase 11 merge: the parent's winner decides which child rows are kept.
+- `slotId` (logs, reminders) has no FK on purpose; the domain tolerates dangling slotIds.
+- A same-day `addScheduleVersion` replace drops the old version's slots, so Phase 4 must remap reminder slotIds when it saves.
+- `useLiveGoals` includes archived goals; the feature layer filters (unlike `listGoals`).
+- `endVacationNow` sets endDate = today - 1; confirm that UX in Phase 6.
 - Live hooks (`src/db/live.ts`) are thin `useLiveQuery` wrappers, checked by tsc only.
 
 ## Phase 2 device verification pending (run in Phase 13)

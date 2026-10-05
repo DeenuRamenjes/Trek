@@ -1,4 +1,4 @@
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const goals = sqliteTable('goals', {
   id: text('id').primaryKey(),
@@ -9,7 +9,7 @@ export const goals = sqliteTable('goals', {
   trackingType: text('tracking_type', { enum: ['check', 'count', 'duration', 'value'] })
     .notNull()
     .default('check'),
-  targetValue: integer('target_value').notNull().default(1),
+  targetValue: real('target_value').notNull().default(1),
   unit: text('unit'),
   startDate: text('start_date').notNull(),
   endDate: text('end_date'),
@@ -105,7 +105,7 @@ export const logs = sqliteTable(
       .references(() => goals.id, { onDelete: 'cascade' }),
     date: text('date').notNull(),
     slotId: text('slot_id'),
-    value: integer('value').notNull(),
+    value: real('value').notNull(),
     status: text('status', { enum: ['done', 'partial', 'skipped'] }).notNull(),
     note: text('note'),
     loggedAt: text('logged_at').notNull(),
@@ -149,7 +149,7 @@ export const pendingActions = sqliteTable(
     date: text('date').notNull(),
     slotId: text('slot_id'),
     action: text('action', { enum: ['done', 'increment', 'skip', 'snooze'] }).notNull(),
-    value: integer('value'),
+    value: real('value'),
     createdAt: text('created_at').notNull(),
     processedAt: text('processed_at'),
   },

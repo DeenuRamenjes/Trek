@@ -20,6 +20,16 @@ afterEach(() => jest.useRealTimers());
 
 const count = (table: string) => (raw.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get() as { c: number }).c;
 
+describe('decimal values', () => {
+  it('stores and reads back fractional log and target values', async () => {
+    const g = await r.createGoal(db, { name: 'Weight', trackingType: 'value', targetValue: 72.5 }, TODAY);
+    expect(g.targetValue).toBe(72.5);
+    const log = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 72.5, status: 'done' });
+    expect(log.value).toBe(72.5);
+    expect((await r.listLogs(db, { goalId: g.id }))[0].value).toBe(72.5);
+  });
+});
+
 describe('goals', () => {
   it('name-only goal gets defaults and one daily version', async () => {
     const g = await r.createGoal(db, { name: 'Water' }, TODAY);

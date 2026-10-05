@@ -261,7 +261,7 @@
         },
         "target_value": {
           "name": "target_value",
-          "type": "integer",
+          "type": "real",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
@@ -490,7 +490,7 @@
         },
         "value": {
           "name": "value",
-          "type": "integer",
+          "type": "real",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
@@ -600,7 +600,7 @@
         },
         "value": {
           "name": "value",
-          "type": "integer",
+          "type": "real",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false

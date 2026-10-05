@@ -36,7 +36,7 @@ CREATE TABLE `goals` (
 	`icon` text DEFAULT 'flag' NOT NULL,
 	`color` text DEFAULT '#2E7D5B' NOT NULL,
 	`tracking_type` text DEFAULT 'check' NOT NULL,
-	`target_value` integer DEFAULT 1 NOT NULL,
+	`target_value` real DEFAULT 1 NOT NULL,
 	`unit` text,
 	`start_date` text NOT NULL,
 	`end_date` text,
@@ -71,7 +71,7 @@ CREATE TABLE `logs` (
 	`goal_id` text NOT NULL,
 	`date` text NOT NULL,
 	`slot_id` text,
-	`value` integer NOT NULL,
+	`value` real NOT NULL,
 	`status` text NOT NULL,
 	`note` text,
 	`logged_at` text NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE `pending_actions` (
 	`date` text NOT NULL,
 	`slot_id` text,
 	`action` text NOT NULL,
-	`value` integer,
+	`value` real,
 	`created_at` text NOT NULL,
 	`processed_at` text
 );
