@@ -63,5 +63,8 @@ export function dayStatus(ctx: GoalContext, logs: Log[], date: string, today: st
   if (skipped) return { status: 'skipped', value, ratio };
   if (done) return { status: 'done', value, ratio };
   if (partial) return { status: 'partial', value, ratio };
-  return { status: date === today ? 'pending' : 'missed', value, ratio };
+  if (date === today) return { status: 'pending', value, ratio };
+  // timesPerWeek: unlogged past days are neutral; the week is scored by weekScoring.
+  if (effectiveVersion(ctx.versions, date)?.scheduleType === 'timesPerWeek') return { status: 'not-due', value, ratio };
+  return { status: 'missed', value, ratio };
 }

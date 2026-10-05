@@ -50,6 +50,13 @@ describe('dayStatus', () => {
     expect(dayStatus(paused, [], D, TODAY).status).toBe('not-due');
   });
 
+  it('timesPerWeek: done, past unlogged is neutral not-due, today pending', () => {
+    const ctx = mkCtx({ versions: [mkVersion({ scheduleType: 'timesPerWeek', timesPerWeek: 3 })] });
+    expect(dayStatus(ctx, [log({})], D, TODAY).status).toBe('done');
+    expect(dayStatus(ctx, [], D, TODAY).status).toBe('not-due');
+    expect(dayStatus(ctx, [], TODAY, TODAY).status).toBe('pending');
+  });
+
   it('ignores logs of other goals and dates', () => {
     const ctx = mkCtx();
     expect(dayStatus(ctx, [log({ goalId: 'other' }), log({ date: '2026-01-06' })], D, TODAY).status).toBe('missed');

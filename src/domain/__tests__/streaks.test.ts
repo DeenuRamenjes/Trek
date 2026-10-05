@@ -47,17 +47,17 @@ describe('daily streaks', () => {
     expect(currentStreak(ctx, [{ ...lg('2026-01-05'), goalId: 'x' }], '2026-01-05', WS)).toBe(0);
   });
   it('version change keeps past scoring', () => {
-    // weekdays until Jan 11, then daily: Jan 3-4 (weekend) neutral in the past.
+    // weekdays until Jan 7, daily from Jan 8. Weekend Jan 3-4 is not due under the old version.
+    // If past days were scored with the new (daily) version, Jan 3-4 would be missed and break the streak.
     const c = mkCtx({
       versions: [
         mkVersion({ id: 'v1', scheduleType: 'weekdays' }),
-        mkVersion({ id: 'v2', effectiveFrom: '2026-01-08', scheduleType: 'weekends' }),
+        mkVersion({ id: 'v2', effectiveFrom: '2026-01-08', scheduleType: 'daily' }),
       ],
     });
-    const logs = [lg('2026-01-05'), lg('2026-01-06'), lg('2026-01-07'), lg('2026-01-10'), lg('2026-01-11')];
-    expect(currentStreak(c, logs, '2026-01-11', WS)).toBe(5);
-    // Jan 8-9 are not due under weekends: neutral, not missed
-    expect(bestStreak(c, logs, '2026-01-11', WS)).toBe(5);
+    const logs = ['01', '02', '05', '06', '07', '08', '09', '10', '11'].map((d) => lg('2026-01-' + d));
+    expect(currentStreak(c, logs, '2026-01-11', WS)).toBe(9);
+    expect(bestStreak(c, logs, '2026-01-11', WS)).toBe(9);
   });
 });
 
@@ -104,9 +104,9 @@ describe('timesPerWeek streaks', () => {
     expect(bestStreak(c, broken, '2026-01-20', WS)).toBe(4);
   });
   it('weekStart changes week grouping', () => {
-    // Sun-start weeks: Jan 4-10, 11-17. Logs Jan 10 (Sat), Jan 11 (Sun)... only 1 each week with Mon-start grouping fails
+    // Sat Jan 10 and Sun Jan 11 share a Monday-start week but fall in different Sunday-start weeks.
     const logs = [lg('2026-01-10'), lg('2026-01-11')];
-    expect(bestStreak(ctx, logs, '2026-01-25', 1)).toBe(1); // Mon weeks: Sat+Sun share a week
+    expect(bestStreak(ctx, logs, '2026-01-25', 1)).toBe(1);
     expect(bestStreak(ctx, logs, '2026-01-25', 0)).toBe(0);
   });
 });
