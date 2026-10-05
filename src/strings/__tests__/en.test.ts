@@ -36,5 +36,8 @@ describe('strings', () => {
     expect(strings.today.backupBanner(4)).toBe('Last backup 4 days ago');
     expect(strings.settings.dayEndsAt).toBe('My day ends at');
     expect(strings.today.endVacation).toBe('End vacation now');
+    expect(strings.today.backupBanner(1)).toBe('Last backup 1 day ago');
+    expect(strings.stats.days(1)).toBe('1 day');
+    expect(strings.stats.days(12)).toBe('12 days');
   });
 });
