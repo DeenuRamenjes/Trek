@@ -15,7 +15,7 @@
 
 ## Phase 1 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
-- `npx jest`: `Test Suites: 17 passed, 17 total`; `Tests: 182 passed, 182 total`.
+- `npx jest`: `Test Suites: 18 passed, 18 total`; `Tests: 189 passed, 189 total`.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios`: `› ios bundles (1):` and `Exported: dist`.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform android`: `› android bundles (1):` and `Exported: dist`.
 - `dist` was removed after each export run.
@@ -37,7 +37,8 @@
 - The theme cross-fade moved to Phase 9, where the theme switching UI exists.
 - The vacation status glyph is `airplane` (DESIGN.md §1.6 updated), which also resolves the old `sunny` ambiguity for the status glyph.
 - App icon assets are generated from the Trek mark.
-- The root layout treats a font load error as ready, so the native splash never hangs.
+- The root layout treats a font load error as ready, so the native splash never hangs. Readiness now lives in `src/features/startup/useAppReady.ts`, which combines a list of readiness sources; Phase 2 adds migrations as one more source. A source error shows a designed startup error screen.
+- Reanimated layout transitions (Collapse, list reflow) are allowed by CLAUDE.md §5.1 (approved diff D4).
 
 ## Deviations from CLAUDE.md
 - None beyond the approved diffs D1–D15. Plan amendments approved during execution are listed under Decisions.
@@ -57,10 +58,12 @@ These review notes were deferred to the phase that builds on the affected code. 
 - Phase 5:
   - `SegmentedControl` uses `tablist` with `button` children; switch to `radiogroup`/`radio` (or `tab`) when the animated indicator is added.
   - Charts must expose their values to screen readers; selected chips and the date strip must not rely on fill color alone.
+- Phase 5: `AnimatedNumber` `fromRef` should track the last shown value.
 - Phase 6: history day cells are about 42.9 pt wide on a 360 dp screen (below 44 pt); day accessibility labels should be formatted with date-fns (for example "5 October 2026, Done").
 - Phase 7: move review sentence assembly ("Reading 100%", the totals line) into string templates.
 - Phase 9: settings option labels currently in mock data move into the strings file.
 - Phase 13:
+  - TabBar: move icon size, gap and pill height to tokens, and check the indicator's vertical alignment.
   - Re-export `icon.png` as RGB (no alpha) and make the Android adaptive-icon layer sizes consistent.
   - Keep dev preview code out of release bundles (the Android release export currently contains preview mock data, although the routes redirect at runtime).
   - Unit-test the `__DEV__ === false` redirect and the light/dark routing of the preview routes.

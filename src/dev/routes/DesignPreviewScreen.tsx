@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaInsetsContext, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { strings } from '../../strings/en';
 import { IconButton } from '../../ui/components';
 import { uiIcons } from '../../ui/icons';
@@ -23,7 +23,10 @@ export function DesignPreviewScreen({ screen, mode }: Props) {
         <View style={[styles.backRow, { paddingTop: insets.top }]}>
           <IconButton icon={uiIcons.back} accessibilityLabel={strings.navigation.back} onPress={() => router.back()} />
         </View>
-        <Component />
+        {/* Back row already consumed the top inset; the preview Screen must not pad it again. */}
+        <SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>
+          <Component />
+        </SafeAreaInsetsContext.Provider>
       </View>
     </ThemeProvider>
   );

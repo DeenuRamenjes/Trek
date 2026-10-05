@@ -1,6 +1,10 @@
 /** Every user-facing string lives here, ready for translation. No emojis. */
 export const strings = {
   appName: 'Trek',
+  startup: {
+    errorTitle: 'Trek could not start',
+    errorBody: 'Restart the app. If this keeps happening, export the error log from Settings.',
+  },
   tabs: {
     today: 'Today',
     stats: 'Stats',
