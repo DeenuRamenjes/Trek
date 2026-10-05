@@ -18,6 +18,13 @@ export default function SettingsScreen() {
       <Card>
         <Button
           variant="secondary"
+          label={strings.settings.appearance}
+          icon="color-palette-outline"
+          accessibilityLabel={strings.settings.open(strings.settings.appearance)}
+          onPress={() => router.push('/settings/appearance')}
+        />
+        <Button
+          variant="secondary"
           label={strings.settings.vacation}
           icon="airplane"
           accessibilityLabel={strings.settings.open(strings.settings.vacation)}
