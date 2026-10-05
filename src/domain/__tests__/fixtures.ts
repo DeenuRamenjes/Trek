@@ -1,4 +1,4 @@
-import type { Goal, GoalContext, GoalPause, ScheduleVersion } from '../types';
+import type { Goal, GoalContext, GoalPause, Log, ScheduleVersion } from '../types';
 import type { DomainVacation } from '../types';
 
 export const T = '2026-01-01T00:00:00.000Z';
@@ -31,4 +31,11 @@ export function mkVacation(o: Partial<DomainVacation> = {}): DomainVacation {
 
 export function mkCtx(o: Partial<GoalContext> = {}): GoalContext {
   return { goal: mkGoal(), versions: [mkVersion()], pauses: [], vacations: [], dayEndsAt: 0, ...o };
+}
+
+export function mkLog(o: Partial<Log> & { date: string }): Log {
+  return {
+    id: `l-${o.date}-${o.goalId ?? 'g1'}-${o.slotId ?? ''}`, goalId: 'g1', slotId: null, value: 1, status: 'done', note: null,
+    loggedAt: T, updatedAt: T, ...o,
+  } as Log;
 }

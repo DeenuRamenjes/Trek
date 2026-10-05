@@ -197,6 +197,19 @@ export const strings = {
     seed: 'Seed demo data',
     open: (name: string) => `Open ${name}`,
   },
+  insights: {
+    templates: {
+      overallImproved: 'Overall completion improved {percent}% vs last {period}',
+      overallDeclined: 'Overall completion dropped {percent}% vs last {period}',
+      goalImproved: '{goal} improved {percent}% vs last {period}',
+      goalDeclined: '{goal} dropped {percent}% vs last {period}',
+      streakGained: '{goal} streak grew by {days} days',
+      mostSkippedWeekday: 'You skip most on {weekday}',
+      perfectPeriod: 'A perfect {period}: every due day done',
+    },
+    weekdays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    periods: { week: 'week', month: 'month' },
+  },
   motionCheck: {
     title: 'Motion check',
     reduceMotionOn: 'Reduce motion is on',
