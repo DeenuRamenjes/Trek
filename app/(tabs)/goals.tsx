@@ -1,10 +1,10 @@
-import { AppText, Screen } from '../../src/ui/components';
-import { strings } from '../../src/strings/en';
+import { GoalsList } from '../../src/features/goals/GoalsList';
+import { Screen } from '../../src/ui/components';
 
 export default function GoalsScreen() {
   return (
     <Screen edges={['top', 'left', 'right']}>
-      <AppText variant="display">{strings.tabs.goals}</AppText>
+      <GoalsList />
     </Screen>
   );
 }
