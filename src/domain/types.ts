@@ -1,6 +1,6 @@
-import type { Goal, GoalPause, ScheduleVersion, Vacation } from '../db/schema';
+import type { Goal, GoalPause, Log, ScheduleVersion, Slot, Vacation } from '../db/schema';
 
-export type { Goal, GoalPause, ScheduleVersion };
+export type { Goal, GoalPause, Log, ScheduleVersion, Slot };
 
 /** Vacation row plus the goals it selects (empty when scope is 'all'). */
 export type DomainVacation = Vacation & { goalIds: string[] };
@@ -12,4 +12,6 @@ export type GoalContext = {
   pauses: GoalPause[];
   vacations: DomainVacation[];
   dayEndsAt: number;
+  /** Slots of all schedule versions of the goal; absent means no slots. */
+  slots?: Slot[];
 };
