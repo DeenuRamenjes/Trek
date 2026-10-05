@@ -8,6 +8,11 @@ export const strings = {
     errorTitle: 'Trek could not start',
     errorBody: 'Restart the app. If this keeps happening, export the error log from Settings.',
   },
+  notifications: {
+    markDone: 'Mark done',
+    snooze: 'Snooze 10 min',
+    snoozeBody: 'Reminder',
+  },
   tabs: {
     today: 'Today',
     stats: 'Stats',
