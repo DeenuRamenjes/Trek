@@ -17,6 +17,8 @@ describe('domain purity', () => {
     expect(src).not.toMatch(/from ['"]react/);
     expect(src).not.toMatch(/from ['"]expo/);
     expect(src).not.toMatch(/from ['"]react-native/);
+    expect(src).not.toMatch(/require\(\s*['"](react|expo)/);
+    expect(src).not.toMatch(/^\s*import\s+['"](react|expo)/m);
     const dbImports = src.split('\n').filter((l) => /^\s*import\b/.test(l) && /from ['"](\.\.\/)+db/.test(l));
     for (const l of dbImports) expect(l).toMatch(/^\s*import type\b/);
   });
