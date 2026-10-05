@@ -1,10 +1,3 @@
-import { AppText, Screen } from '../../src/ui/components';
-import { strings } from '../../src/strings/en';
+import { StatsScreen } from '../../src/features/stats/StatsScreen';
 
-export default function StatsScreen() {
-  return (
-    <Screen edges={['top', 'left', 'right']}>
-      <AppText variant="display">{strings.tabs.stats}</AppText>
-    </Screen>
-  );
-}
+export default StatsScreen;

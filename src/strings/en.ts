@@ -94,6 +94,12 @@ export const strings = {
     createGroupBody: 'Group goals to compare them here.',
     emptyRequireGroup: 'Create a group with goals to see statistics',
     createGroupAction: 'Create group',
+    loading: 'Loading statistics',
+    completionSummary: (percent: number) => `Completion ${percent} percent`,
+    countsSummary: (done: number, partial: number, skipped: number, vacation: number, missed: number) =>
+      `${done} done, ${partial} partial, ${skipped} skipped, ${vacation} vacation, ${missed} missed`,
+    bestWeekdayNone: 'Not enough data yet',
+    reviewsTitle: 'Reviews',
   },
   goals: {
     title: 'Goals',
