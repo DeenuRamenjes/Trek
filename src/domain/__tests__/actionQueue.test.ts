@@ -28,6 +28,10 @@ describe('applyAction', () => {
     const r = applyAction({ goal: check, existing: { value: 0, status: 'partial', note: 'hi' } }, mk({ id: 'a' }));
     expect(r).toMatchObject({ kind: 'log', upsert: { value: 1, status: 'done', note: 'hi' } });
   });
+  it('done keeps a value already above the target', () => {
+    const r = applyAction({ goal: count, existing: { value: 11, status: 'done', note: null } }, mk({ id: 'a', action: 'done' }));
+    expect(r).toMatchObject({ upsert: { value: 11, status: 'done' } });
+  });
   it('increment adds 1 and picks partial then done', () => {
     const r1 = applyAction({ goal: count }, mk({ id: 'a', action: 'increment' }));
     expect(r1).toMatchObject({ upsert: { value: 1, status: 'partial' } });

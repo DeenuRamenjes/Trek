@@ -122,3 +122,9 @@ These review notes were deferred to the phase that builds on the affected code. 
 - Splash feel, and the handoff from the native splash to the animated splash.
 - Tab indicator alignment under each tab, including with large system font size.
 - App icon look on both platforms.
+
+### Phase 3 final review notes
+- `applyAction` "done" keeps a value already above the target (fixed after the final review).
+- Weekly reminder triggers keep repeating beyond the 14-day planning window; correctness relies on the reconciler re-running (foreground, background task, data changes). Phase 8.
+- Carried to Phase 7: insights can number fewer than 2; timesPerWeek vacation units mix days and weeks; `timeBucket` ignores `dayEndsAt`; missing review tests (vacation-adjusted timesPerWeek, streak gained, slot partial ratio).
+- Carried to Phase 13: stats `goalUnits` cost is goals x logs; check against the 3-year seed.

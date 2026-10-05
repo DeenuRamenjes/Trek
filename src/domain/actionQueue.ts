@@ -55,8 +55,11 @@ export function applyAction(
   const note = state.existing?.note ?? null;
   const base = { goalId: action.goalId, date: action.date, slotId };
   switch (action.action) {
-    case 'done':
-      return { kind: 'log', upsert: { ...base, value: target(state.goal), status: 'done', note } };
+    case 'done': {
+      // Keep progress already above the target ("at least").
+      const prior = state.existing?.status === 'skipped' ? 0 : (state.existing?.value ?? 0);
+      return { kind: 'log', upsert: { ...base, value: Math.max(prior, target(state.goal)), status: 'done', note } };
+    }
     case 'increment': {
       const current = state.existing?.status === 'skipped' ? 0 : (state.existing?.value ?? 0);
       const value = current + (action.value ?? 1);
