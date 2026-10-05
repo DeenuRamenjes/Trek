@@ -9,3 +9,6 @@ jest.mock('react-native-mmkv', () => {
 
 // Reanimated 4's worklets runtime is native-only; its package ships a jest mock.
 jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock'));
+
+// expo-crypto is native; node's randomUUID has the same contract.
+jest.mock('expo-crypto', () => ({ randomUUID: () => require('node:crypto').randomUUID() }));

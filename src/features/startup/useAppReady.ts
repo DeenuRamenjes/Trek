@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
+import { useDbMigrations } from '../../db/useMigrations';
 
 export type Readiness = { ready: boolean; error?: Error | null };
 export type AppReady = { ready: boolean; error: Error | null };
@@ -22,8 +23,9 @@ function useIconFonts(): Readiness {
   return { ready: loaded || error != null };
 }
 
-/** Phase 2 adds `useMigrations()` to the sources array; the layout stays unchanged. */
+/** Sources: icon fonts and DB migrations; the layout stays unchanged. */
 export function useAppReady(): AppReady {
   const fonts = useIconFonts();
-  return combineReadiness([fonts]);
+  const db = useDbMigrations();
+  return combineReadiness([fonts, db]);
 }
