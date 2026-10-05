@@ -38,7 +38,13 @@
       ],
       "expo-sqlite",
       "expo-background-task",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Trek uses Face ID to unlock the app."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false

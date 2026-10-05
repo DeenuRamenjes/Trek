@@ -10,6 +10,8 @@ import { useNotificationsLifecycle } from '../src/services/notifications/useNoti
 import { strings } from '../src/strings/en';
 import { AppText, Screen } from '../src/ui/components';
 import { useAppReady } from '../src/features/startup/useAppReady';
+import { LockGate } from '../src/features/security/LockGate';
+import { PrivacyOverlay } from '../src/features/security/PrivacyOverlay';
 import { useSettings } from '../src/features/settings/settingsStore';
 import { MotionConfig, useReduceMotion } from '../src/ui/motion';
 import { AnimatedSplash } from '../src/ui/splash/AnimatedSplash';
@@ -60,9 +62,12 @@ export default function RootLayout() {
           <ThemedSystemBars />
           <DbProvider>
             <NotificationsLifecycle />
-            <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
+            <LockGate>
+              <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
+            </LockGate>
           </DbProvider>
           {splashDone ? null : <AnimatedSplash onFinish={() => setSplashDone(true)} />}
+          <PrivacyOverlay />
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

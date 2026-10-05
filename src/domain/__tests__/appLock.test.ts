@@ -1,0 +1,100 @@
+import { createLockState, lockReducer, LOCK_FAILURES_BEFORE_PASSCODE, timeoutMs } from '../appLock';
+
+const MIN = 60_000;
+
+describe('createLockState', () => {
+  it('locks on cold start when enabled', () => {
+    expect(createLockState(true).locked).toBe(true);
+  });
+  it('does not lock on cold start when disabled', () => {
+    expect(createLockState(false).locked).toBe(false);
+  });
+});
+
+describe('timeoutMs', () => {
+  it('maps options to milliseconds', () => {
+    expect(timeoutMs('immediate')).toBe(0);
+    expect(timeoutMs('1m')).toBe(MIN);
+    expect(timeoutMs('5m')).toBe(5 * MIN);
+    expect(timeoutMs('15m')).toBe(15 * MIN);
+  });
+});
+
+describe('background and foreground', () => {
+  const unlocked = () => ({ ...createLockState(false), locked: false });
+
+  it('disabled never locks', () => {
+    let s = lockReducer(unlocked(), { type: 'background', at: 0 });
+    s = lockReducer(s, { type: 'foreground', at: 99 * MIN, enabled: false, timeout: 'immediate' });
+    expect(s.locked).toBe(false);
+  });
+
+  it('stays unlocked within the timeout', () => {
+    let s = lockReducer(unlocked(), { type: 'background', at: 1000 });
+    s = lockReducer(s, { type: 'foreground', at: 1000 + MIN - 1, enabled: true, timeout: '1m' });
+    expect(s.locked).toBe(false);
+    expect(s.backgroundedAt).toBeNull();
+  });
+
+  it('locks past the timeout', () => {
+    let s = lockReducer(unlocked(), { type: 'background', at: 1000 });
+    s = lockReducer(s, { type: 'foreground', at: 1000 + 5 * MIN, enabled: true, timeout: '5m' });
+    expect(s.locked).toBe(true);
+  });
+
+  it('immediate locks on any background', () => {
+    let s = lockReducer(unlocked(), { type: 'background', at: 1000 });
+    s = lockReducer(s, { type: 'foreground', at: 1000, enabled: true, timeout: 'immediate' });
+    expect(s.locked).toBe(true);
+  });
+
+  it('locks when the clock went backwards', () => {
+    let s = lockReducer(unlocked(), { type: 'background', at: 5000 });
+    s = lockReducer(s, { type: 'foreground', at: 1000, enabled: true, timeout: '15m' });
+    expect(s.locked).toBe(true);
+  });
+
+  it('foreground without a prior background changes nothing', () => {
+    const s = lockReducer(unlocked(), { type: 'foreground', at: 9 * MIN, enabled: true, timeout: 'immediate' });
+    expect(s.locked).toBe(false);
+  });
+
+  it('a second background event keeps the first timestamp', () => {
+    let s = lockReducer(unlocked(), { type: 'background', at: 1000 });
+    s = lockReducer(s, { type: 'background', at: 1000 + 10 * MIN });
+    s = lockReducer(s, { type: 'foreground', at: 1000 + 2 * MIN, enabled: true, timeout: '1m' });
+    expect(s.locked).toBe(true);
+  });
+
+  it('stays locked while locked', () => {
+    let s = createLockState(true);
+    s = lockReducer(s, { type: 'background', at: 0 });
+    s = lockReducer(s, { type: 'foreground', at: 1, enabled: true, timeout: '15m' });
+    expect(s.locked).toBe(true);
+  });
+});
+
+describe('failures and success', () => {
+  it('counts failures and resets on success', () => {
+    let s = createLockState(true);
+    s = lockReducer(s, { type: 'failure' });
+    s = lockReducer(s, { type: 'failure' });
+    expect(s.failures).toBe(2);
+    s = lockReducer(s, { type: 'success' });
+    expect(s.failures).toBe(0);
+    expect(s.locked).toBe(false);
+  });
+
+  it('passcode fallback threshold is three failures', () => {
+    expect(LOCK_FAILURES_BEFORE_PASSCODE).toBe(3);
+  });
+});
+
+describe('disabled event', () => {
+  it('unlocks and clears state so re-enabling does not lock at once', () => {
+    let s = createLockState(true);
+    s = lockReducer(s, { type: 'failure' });
+    s = lockReducer(s, { type: 'disabled' });
+    expect(s).toEqual({ locked: false, failures: 0, backgroundedAt: null });
+  });
+});

@@ -25,6 +25,13 @@ export default function SettingsScreen() {
         />
         <Button
           variant="secondary"
+          label={strings.settings.security}
+          icon="lock-closed-outline"
+          accessibilityLabel={strings.settings.open(strings.settings.security)}
+          onPress={() => router.push('/settings/security')}
+        />
+        <Button
+          variant="secondary"
           label={strings.settings.vacation}
           icon="airplane"
           accessibilityLabel={strings.settings.open(strings.settings.vacation)}

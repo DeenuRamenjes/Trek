@@ -192,6 +192,28 @@ These review notes were deferred to the phase that builds on the affected code. 
   - Extend the emoji scan to accessibility labels and placeholders.
   - Optional color tests: a positive large-text AA case, tone 99 and `toneOf` at 0 and 100, and a mid-grey `readableOn` case.
 
+## Phase 9 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no errors.
+- `npx jest`: Test Suites: 75 passed, 75 total; Tests: 665 passed, 665 total.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported: dist.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported: dist.
+
+## Phase 9 decisions
+- Theme cross-fade runs only when the resolved background color changes (a snapshot overlay fades out over 250 ms); it is skipped under reduce motion.
+- Lock logic is a pure reducer (`src/domain/appLock.ts`): cold start locks when enabled; background then foreground locks when elapsed >= timeout, or when the clock moved backwards; failures count up and reset on success; disabling clears state.
+- Only the `background` AppState locks (iOS `inactive` happens during the Face ID prompt and would loop). The privacy overlay covers both `inactive` and `background`.
+- The first prompt uses biometrics without passcode fallback; after 3 failures the passcode is offered (`disableDeviceFallback: false`). A cancelled prompt is not counted as a failure.
+- Enabling requires `hasHardwareAsync` and `isEnrolledAsync` and a successful authentication; otherwise a notice explains and the lock stays off. No PIN is stored.
+- `LockGate` wraps the navigator inside `DbProvider`; the animated splash and `PrivacyOverlay` sit above it, so the splash is the only thing not covered by the lock.
+- `expo-blur` ships no config plugin, so only `expo-local-authentication` (with `faceIDPermission`) is in `app.json`.
+- The Phase 8 reconciler test for lock-on notification content (generic body, no notes) already existed and was kept.
+
+## Phase 9 device verification pending (run in Phase 13)
+- Biometric flow (Face ID, fingerprint, passcode fallback after 3 failures) on iOS and Android.
+- App switcher privacy overlay on iOS and Android.
+- Lock animations (logo bounce, button slide, failure shake, fade-out with content scale) and reduce-motion behavior.
+- Theme cross-fade look.
+
 ## Phase 8 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no errors.
 - `npx jest`: Test Suites: 69 passed, 69 total; Tests: 622 passed, 622 total (after final-review fixes).

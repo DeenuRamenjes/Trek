@@ -25,3 +25,15 @@ jest.mock('victory-native', () => {
   const CartesianChart = ({ testID }) => React.createElement(View, { testID });
   return { CartesianChart, Bar: Nothing, Line: Nothing };
 });
+
+// Biometrics and blur are native; tests drive the auth mock directly.
+jest.mock('expo-local-authentication', () => ({
+  hasHardwareAsync: jest.fn(async () => true),
+  isEnrolledAsync: jest.fn(async () => true),
+  authenticateAsync: jest.fn(async () => ({ success: true })),
+}));
+jest.mock('expo-blur', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return { BlurView: ({ children, ...props }) => React.createElement(View, props, children) };
+});
