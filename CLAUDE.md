@@ -338,7 +338,8 @@ Phases run back to back without waiting for a "Run Phase N" request.
     - a performance check with the 3-year seed: smooth lists, the Stats tab rendering in under 500 ms, and 60 fps animations on a mid-range Android device.
 
 ## 8. Working rules
-- Run all phases continuously. After a phase is verified and reported, start the next phase immediately. Pause only for the "STOP and ask" items in section 1, the platform checks in Phases 10 and 12, or a blocker; ask in-session and continue.
+- Run all phases 0–13 continuously, without stopping between phases and without waiting for confirmation. After a phase is verified and reported, start the next phase immediately in the same session. Pause only for the "STOP and ask" items in section 1 or a hard blocker; ask in-session and continue. Phase 10 and 12 platform checks that need a device are recorded as "device verification pending" and do not stop the run.
+- Communication: use caveman mode (full) in every chat reply and every subagent reply. Code, comments, app strings, file contents, docs, plans, PROGRESS.md and commit messages stay in normal English.
 - Keep `PROGRESS.md` updated: phase status, decisions made, deviations from this spec (with the reason), and open questions.
 - At the end of each phase, report: `✅ Phase N: <what was done> · Tests: <commands run + results> · Next: <what Phase N+1 will do>`. Then continue to the next phase.
 - Ground every progress claim in actual command output. Never claim a test passed without running it.
