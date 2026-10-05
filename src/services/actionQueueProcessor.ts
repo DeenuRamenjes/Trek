@@ -7,8 +7,10 @@ import { withTransaction } from '../db/transaction';
 import { applyAction, processQueue } from '../domain/actionQueue';
 import { strings } from '../strings/en';
 import { notificationsAdapter } from './notifications/adapter';
+import { GOAL_CATEGORY, SNOOZE_ID_PREFIX } from './notifications/categories';
+import { timeIntervalTrigger } from './notifications/triggers';
 
-export const SNOOZE_ID_PREFIX = 's:';
+export { SNOOZE_ID_PREFIX };
 
 /**
  * Applies every unprocessed action once, oldest first. Each action runs in its own transaction
@@ -34,9 +36,9 @@ export async function processPendingActions(db: TrekDb, now: Date = new Date()):
             title: goal.name,
             body: strings.notifications.snoozeBody,
             data: { goalId: goal.id, date: action.date, slotId: action.slotId ?? null },
-            categoryIdentifier: 'goal-reminder',
+            categoryIdentifier: GOAL_CATEGORY,
           },
-          trigger: { type: 'timeInterval', seconds: result.minutes * 60, repeats: false } as never,
+          trigger: timeIntervalTrigger(result.minutes * 60),
         });
       }
       await markProcessed(db, action.id, at);
