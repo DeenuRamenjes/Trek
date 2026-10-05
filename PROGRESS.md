@@ -15,7 +15,7 @@
 ## Decisions
 - Design decisions and CLAUDE.md diffs D1–D15: `docs/superpowers/specs/2026-10-05-trek-design.md`.
 - Moti is not used (it depends on framer-motion); motion primitives will be built on Reanimated 4 in Phase 1.
-- `package.json` pins `react-dom` to 19.2.3 via `overrides`: expo-router pulls react-dom in transitively, and npm otherwise resolves 19.3.0, which needs react 19.3.
+- `package.json` pins `react-dom` to 19.2.3 via `overrides`: expo-router pulls react-dom in transitively, and npm otherwise resolves 19.3.0, which needs react ^19.3.0.
 - Install commands use `EXPO_OFFLINE=1`; this environment's proxy blocks the Expo API and reactnative.directory.
 - jest uses two projects (`node` for `*.test.ts`, `app` for `*.test.tsx`), both preset `jest-expo`. `jest-expo/node` and `jest-expo/ios` fail to transform in this setup.
 - Route tests render route components with a mocked `expo-router`, because `renderRouter` is incompatible with RNTL 14's async render.
@@ -29,7 +29,35 @@
 - None beyond the approved diffs D1–D15. Plan amendments approved during execution are listed under Decisions.
 
 ## Open questions
-- Deferred review notes (minor) for later phases: chart stand-ins expose no data to screen readers (Phase 5 charts must); selected chips and the date strip use fill colour plus accessibility state only; settings option labels in mock data move to the strings file when Settings becomes real (Phase 9); the `__DEV__ === false` redirect of the preview routes is not unit-tested.
+- None.
+
+## Carried forward (from Phase 0 reviews)
+These review notes were deferred to the phase that builds on the affected code. Each later phase plan must pick up its items.
+- Phase 1:
+  - `staggerDelay` should guard NaN and fractional indexes; add tests for splash timing coupling (mark draw ends before the cross-fade) and for the snappy spring and easing ranges.
+  - `SegmentedControl` uses `tablist` with `button` children; switch to `radiogroup`/`radio` (or `tab`) when the animated indicator is added.
+  - `Card` should accept `StyleProp<ViewStyle>`; the components barrel should export `ThemeProvider`, `useTheme` and the public prop types; `Banner` should not key actions by label.
+  - `StatusBar` style should follow the theme mode; add tests for the ThemeProvider system-scheme fallback and the `accent` prop.
+  - `Screen` needs an `edges` prop so the tab bar does not double the bottom inset.
+  - `buildColors` should return a copy of the status colors instead of the shared object.
+  - Preview screens need a back affordance.
+  - Decide one meaning for the `sunny` icon before Phase 2 stores icon names: it is both the vacation status glyph and a curated goal icon, while the vacation banner uses `airplane-outline`.
+- Phase 3: the design doc names the Node jest project `domain` with the time zone pinned per suite; the current project is named `node`. Add the time-zone mechanism (per-suite `process.env.TZ` or a dedicated DST project) at the start of Phase 3.
+- Phase 4:
+  - Implement and test the custom-color AA rule from DESIGN.md §1.7 (surface and surfaceMuted, both modes), and add tests that a custom accent keeps AA contrast.
+  - "Snooze 3 days" and the "/1000" note counter should take their numbers from constants.
+  - Duration goals need their own primary-action label (for example "Add 5 minutes to Meditation") instead of "Mark … done".
+  - Align naming (`today.increment` vs `history.increaseValue`), replace the "Readable (AA)" wording with plainer copy, and keep the Create Goal schedule summary in sync with the selected type.
+  - Move sentence assembly (status plus progress on Today rows) into string templates.
+- Phase 5: charts must expose their values to screen readers; selected chips and the date strip must not rely on fill color alone.
+- Phase 6: history day cells are about 42.9 pt wide on a 360 dp screen (below 44 pt); day accessibility labels should be formatted with date-fns (for example "5 October 2026, Done").
+- Phase 7: move review sentence assembly ("Reading 100%", the totals line) into string templates.
+- Phase 9: settings option labels currently in mock data move into the strings file.
+- Phase 13:
+  - Keep dev preview code out of release bundles (the Android release export currently contains preview mock data, although the routes redirect at runtime).
+  - Unit-test the `__DEV__ === false` redirect and the light/dark routing of the preview routes.
+  - Extend the emoji scan to accessibility labels and placeholders.
+  - Optional color tests: a positive large-text AA case, tone 99 and `toneOf` at 0 and 100, and a mid-grey `readableOn` case.
 
 ## Device verification pending (run in Phase 13)
 - `/design-preview` on an iOS and an Android development build, light and dark, with large system font size.

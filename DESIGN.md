@@ -48,6 +48,7 @@ All colors come from `buildColors(mode, accent)`. No hard-coded colors in compon
 | `accent` | accent tone 40 | accent tone 80 |
 | `onAccent` | black or white, whichever contrasts more | same rule |
 | `accentMuted` | accent tone 95 | accent tone 20 |
+| `overlay` | rgba(17, 18, 20, 0.4) | rgba(0, 0, 0, 0.6) |
 
 - Default accent: `#2E7D5B` (Trek green). Any accent generates a tonal palette: tone T is the color with the accent's hue and saturation whose CIELAB L* equals T (tones 0, 10, 20 … 90, 95, 99, 100).
 - Contrast rules (tested): text tokens ≥ 4.5:1 on `background`, `surface` and `surfaceMuted`; `onAccent` ≥ 4.5:1 on `accent`; accent, status and goal colors ≥ 3:1 on `background` and `surface`.
@@ -63,12 +64,12 @@ Status is always shown with an icon (Ionicons) plus color, and labelled in text 
 | vacation | `sunny` | #2F6FB0 | #7DB3F0 |
 | missed | `close-circle-outline` | #C0392B | #F07A6E |
 | pending | `ellipse-outline` | #6B6F76 | #9EA2A9 |
-| not-due | none (muted day number) | #6B6F76 | #9EA2A9 |
+| notDue (not-due) | none (muted day number) | #6B6F76 | #9EA2A9 |
 
 ### 1.7 Goal palette and icons
 - 10 curated colors, stored by their light hex; dark mode uses the paired dark hex:
   #2E7D5B/#5CC49A, #2F6FB0/#7DB3F0, #7A4FC2/#B596F2, #B23A7A/#F08CC0, #C0392B/#F07A6E, #B26A00/#F0A443, #8A6D00/#E0C35A, #1F7A8C/#5FC6D8, #4F5BD5/#9AA3F5, #5C6B73/#A9B6BD.
-- Custom colors pass through unchanged and show an AA badge (3:1 non-text check against `surface`).
+- Custom colors pass through unchanged in both modes, so the AA badge (3:1 non-text) checks the color against `surface` and `surfaceMuted` in both light and dark; the color is accepted only if all four checks pass. Implemented and tested in Phase 4 (the Phase 0 preview checks `surface` in the current mode only).
 - 20 curated Ionicons goal icons: water, barbell, book, flower, walk, bicycle, bed, cafe, nutrition, heart, musical-notes, brush, code-slash, language, medkit, moon, sunny, fitness, footsteps, leaf.
 
 ## 2. Motion tokens
