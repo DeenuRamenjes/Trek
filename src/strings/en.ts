@@ -423,6 +423,15 @@ export const strings = {
     widget: 'Widget',
     about: 'About',
     exportErrorLog: 'Export error log',
+    notifications: {
+      title: 'Notifications',
+      on: 'On',
+      off: 'Off',
+      blocked: 'Blocked in system settings',
+      notAsked: 'Not enabled yet',
+      enable: 'Turn on',
+      openSettings: 'Open settings',
+    },
     open: (name: string) => `Open ${name}`,
   },
   lock: {

@@ -1,10 +1,12 @@
 import '../src/services/notifications/setup';
+import '../src/services/notifications/backgroundTask';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DbProvider } from '../src/db/DbProvider';
+import { useNotificationsLifecycle } from '../src/services/notifications/useNotificationsLifecycle';
 import { strings } from '../src/strings/en';
 import { AppText, Screen } from '../src/ui/components';
 import { useAppReady } from '../src/features/startup/useAppReady';
@@ -15,6 +17,11 @@ import { ThemedSystemBars } from '../src/ui/ThemedSystemBars';
 import { ThemeProvider } from '../src/ui/ThemeProvider';
 
 void SplashScreen.preventAutoHideAsync();
+
+function NotificationsLifecycle() {
+  useNotificationsLifecycle();
+  return null;
+}
 
 export default function RootLayout() {
   const theme = useSettings((s) => s.settings.theme);
@@ -52,6 +59,7 @@ export default function RootLayout() {
           <MotionConfig />
           <ThemedSystemBars />
           <DbProvider>
+            <NotificationsLifecycle />
             <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
           </DbProvider>
           {splashDone ? null : <AnimatedSplash onFinish={() => setSplashDone(true)} />}

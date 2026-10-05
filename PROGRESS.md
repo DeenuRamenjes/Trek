@@ -192,6 +192,28 @@ These review notes were deferred to the phase that builds on the affected code. 
   - Extend the emoji scan to accessibility labels and placeholders.
   - Optional color tests: a positive large-text AA case, tone 99 and `toneOf` at 0 and 100, and a mid-grey `readableOn` case.
 
+## Phase 8 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no errors.
+- `npx jest`: Test Suites: 65 passed, 65 total; Tests: 611 passed, 611 total.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported: dist.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported: dist.
+
+## Phase 8 decisions
+- Snoozes (`s:` ids) count against the 64 cap (planner cap = 64 - snoozes) and are never cancelled by the reconciler.
+- Weekday mapping: planner ISO 0 = Monday to expo 1 = Sunday via `toExpoWeekday`.
+- One Android channel per goal (`goal-<id>`), plus `reviews` and `backup`.
+- Exact-alarm fallback = expo's inexact default; no native code.
+- Lifecycle logic is pure (`lifecycle.ts`, injected deps); `useNotificationsLifecycle` is a thin hook (foreground, db changes, relevant settings changes, time zone).
+- `refreshWidgets()` in `src/services/widgetBridge.ts` is a no-op hook point for Phase 12.
+- Background task `trek-background-maintenance`, 15 min minimum, runs processor then reconciler.
+
+## Phase 8 device verification pending (run in Phase 13)
+- Weekly custom schedule reminder fires on iOS and Android.
+- Vacation suppresses reminders.
+- "Mark done" from a killed app is saved exactly once.
+- Background task runs and reconciles.
+- Exact alarm fallback to inexact on Android.
+
 ## Device verification pending (run in Phase 13)
 - `/design-preview` on an iOS and an Android development build, light and dark, with large system font size.
 - `/motion-check` on an iOS and an Android development build at 60 fps, with reduce motion on and off.
