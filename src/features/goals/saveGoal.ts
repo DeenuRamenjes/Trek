@@ -77,7 +77,10 @@ export async function saveGoal(db: TrekDb, goalId: string | null, input: GoalFor
     targetDays: v.durationMode === 'targetDays' ? v.targetDays : null,
   };
   const schedule = scheduleOf(v);
-  const slots = v.slots.map((s) => ({ weekday: s.weekday, time: s.time, label: s.label === '' ? null : s.label }));
+  const seen = new Set<string>();
+  const slots = v.slots
+    .filter((s) => !seen.has(`${s.weekday}|${s.time}`) && seen.add(`${s.weekday}|${s.time}`))
+    .map((s) => ({ weekday: s.weekday, time: s.time, label: s.label === '' ? null : s.label }));
 
   return withTransaction(db, async (tx) => {
     let id: string;

@@ -28,7 +28,7 @@ export function DurationSection({ values, set, open, onToggle }: SectionProps) {
           label={f.endDateLabel}
           value={values.endDate}
           onChangeText={(t) => set('endDate', t)}
-          placeholder="YYYY-MM-DD"
+          placeholder={f.datePlaceholder}
           keyboardType="numbers-and-punctuation"
           invalid={values.endDate !== '' && !isValidDate(values.endDate)}
           maxLength={10}

@@ -1,5 +1,5 @@
 import type { TrekDb } from '../../../db/client';
-import { createGoal, listGoals, listReminders, listScheduleVersions, listSlots } from '../../../db/repositories';
+import { createGoal, listGoals, listLogs, upsertLog, listReminders, listScheduleVersions, listSlots } from '../../../db/repositories';
 import { createTestDb } from '../../../test/testDb';
 import { defaultGoalForm, goalFormSchema } from '../goalFormSchema';
 import { loadGoalFormValues, saveGoal } from '../saveGoal';
@@ -134,5 +134,30 @@ describe('saveGoal', () => {
     const newSlots = await listSlots(db, versions[1].id);
     rems = await listReminders(db, id);
     expect(rems.filter((r) => r.slotId !== null).map((r) => r.slotId).sort()).toEqual(newSlots.map((s) => s.id).sort());
+  });
+
+  it('keeps today slot log after a same-day edit that keeps the slot', async () => {
+    const db = newDb();
+    const slots = [
+      { weekday: 0, time: '08:00', label: '' },
+      { weekday: 0, time: '08:00', label: 'dup' },
+      { weekday: 0, time: '20:00', label: '' },
+    ];
+    const id = await saveGoal(db, null, { ...defaultGoalForm(), name: 'Meds', slots }, '2026-10-05');
+    const v1 = await listScheduleVersions(db, id);
+    const s1 = await listSlots(db, v1[0].id);
+    expect(s1).toHaveLength(2);
+    const morning = s1.find((s) => s.time === '08:00')!;
+    await upsertLog(db, { goalId: id, date: '2026-10-05', slotId: morning.id, value: 1, status: 'done' });
+
+    const form = (await loadGoalFormValues(db, id, '2026-10-05'))!;
+    await saveGoal(db, id, { ...form, slots: form.slots.filter((s) => s.time === '08:00') }, '2026-10-05');
+    const v2 = await listScheduleVersions(db, id);
+    expect(v2).toHaveLength(1);
+    const s2 = await listSlots(db, v2[0].id);
+    expect(s2).toHaveLength(1);
+    const rows = await listLogs(db, { from: '2026-10-05', to: '2026-10-05' });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].slotId).toBe(s2[0].id);
   });
 });

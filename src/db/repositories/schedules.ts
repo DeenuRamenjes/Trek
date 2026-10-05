@@ -2,7 +2,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
 import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
-import { goalScheduleVersions, goalSlots, type ScheduleVersion, type Slot } from '../schema';
+import { goalScheduleVersions, goalSlots, logs, type ScheduleVersion, type Slot } from '../schema';
 
 export type ScheduleVersionInput = Pick<ScheduleVersion, 'scheduleType' | 'scheduleDays'> &
   Partial<Pick<ScheduleVersion, 'everyNDays' | 'timesPerWeek'>>;
@@ -30,6 +30,12 @@ export async function addScheduleVersionTx(
   version: ScheduleVersionInput,
   slots: SlotInput[] = [],
 ): Promise<ScheduleVersion> {
+  const replaced = await tx
+    .select()
+    .from(goalScheduleVersions)
+    .where(and(eq(goalScheduleVersions.goalId, goalId), eq(goalScheduleVersions.effectiveFrom, effectiveFrom)));
+  const oldSlots: Slot[] = [];
+  for (const r of replaced) oldSlots.push(...(await tx.select().from(goalSlots).where(eq(goalSlots.scheduleVersionId, r.id))));
   await tx
     .delete(goalScheduleVersions)
     .where(and(eq(goalScheduleVersions.goalId, goalId), eq(goalScheduleVersions.effectiveFrom, effectiveFrom)));
@@ -45,7 +51,12 @@ export async function addScheduleVersionTx(
     createdAt: nowIso(),
   });
   for (const s of slots) {
-    await tx.insert(goalSlots).values({ id: newId(), scheduleVersionId: id, weekday: s.weekday, time: s.time, label: s.label ?? null });
+    const slotId = newId();
+    await tx.insert(goalSlots).values({ id: slotId, scheduleVersionId: id, weekday: s.weekday, time: s.time, label: s.label ?? null });
+    // A replaced same-day version must not orphan logs: carry them to the slot with the same weekday and time.
+    for (const old of oldSlots.filter((o) => o.weekday === s.weekday && o.time === s.time)) {
+      await tx.update(logs).set({ slotId }).where(and(eq(logs.goalId, goalId), eq(logs.slotId, old.id)));
+    }
   }
   return (await tx.select().from(goalScheduleVersions).where(eq(goalScheduleVersions.id, id)))[0];
 }

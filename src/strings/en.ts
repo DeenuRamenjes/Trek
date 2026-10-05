@@ -124,6 +124,7 @@ export const strings = {
     durationModes: { open: 'Open-ended', endDate: 'End date', targetDays: 'Target days' },
     durationEndSummary: (date: string) => `Until ${date}`,
     durationDaysSummary: (n: number) => `${n} days`,
+    datePlaceholder: 'YYYY-MM-DD',
     endDateLabel: 'End date (YYYY-MM-DD)',
     targetDaysLabel: 'Number of days',
     remindersSummary: 'None',

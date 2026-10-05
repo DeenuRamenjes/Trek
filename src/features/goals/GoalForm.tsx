@@ -138,6 +138,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   content: { gap: spacing.md, paddingBottom: spacing.md },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  input: { minHeight: 52, borderRadius: radii.md, borderWidth: 1, paddingHorizontal: spacing.md },
+  input: { minHeight: 56, borderRadius: radii.md, borderWidth: 1, paddingHorizontal: spacing.md },
   footer: { gap: spacing.sm, minHeight: minTapTarget },
 });
