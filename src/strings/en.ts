@@ -194,6 +194,7 @@ export const strings = {
     title: 'Developer',
     designPreview: 'Design preview',
     motionCheck: 'Motion check',
+    seed: 'Seed demo data',
     open: (name: string) => `Open ${name}`,
   },
   motionCheck: {

@@ -1,6 +1,14 @@
 import { router } from 'expo-router';
+import { getDb } from '../../src/db/client';
+import { seedDemoData } from '../../src/db/seed';
 import { AppText, Button, Card, Screen } from '../../src/ui/components';
 import { strings } from '../../src/strings/en';
+
+function localToday(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
 
 export default function SettingsScreen() {
   return (
@@ -20,6 +28,12 @@ export default function SettingsScreen() {
             label={strings.devTools.motionCheck}
             accessibilityLabel={strings.devTools.open(strings.devTools.motionCheck)}
             onPress={() => router.push('/motion-check')}
+          />
+          <Button
+            variant="secondary"
+            label={strings.devTools.seed}
+            accessibilityLabel={strings.devTools.seed}
+            onPress={() => void seedDemoData(getDb(), { today: localToday() })}
           />
         </Card>
       ) : null}

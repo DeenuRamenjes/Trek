@@ -5,7 +5,8 @@
 |---|---|
 | 0 Design | Complete — awaiting design approval (CLAUDE.md §7.0) |
 | 1 Scaffold, motion, tabs, splash | Complete |
-| 2–13 | Not started |
+| 2 Data | Complete (device verification pending) |
+| 3–13 | Not started |
 
 ## Phase 0 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
@@ -19,6 +20,26 @@
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios`: `› ios bundles (1):` and `Exported: dist`.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform android`: `› android bundles (1):` and `Exported: dist`.
 - `dist` was removed after each export run.
+
+## Phase 2 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no output.
+- `npx jest`: `Test Suites: 23 passed, 23 total`; `Tests: 257 passed, 257 total`; `Snapshots: 1 passed, 1 total`.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist`: `› ios bundles (1):` and `Exported: dist`, exit 0.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist`: `› android bundles (1):` and `Exported: dist`, exit 0.
+- `dist` was removed after each export run.
+
+## Phase 2 decisions
+- Tests run migrations and repositories on a `node:sqlite` in-memory database behind a drizzle `sqlite-proxy` driver (`src/test/testDb.ts`); the app uses the expo-sqlite sync driver.
+- `withTransaction` (`src/db/transaction.ts`) replaces drizzle's `db.transaction`, which commits early on the sync driver with async callbacks. Calls on the same db are serialized through a per-db promise chain, so concurrent callers never nest BEGIN. It is not re-entrant; no repository nests it, and `seedDemoData` uses direct inserts inside one call.
+- The `logs` unique index on `(goal_id, date, coalesce(slot_id, ''))` lives in custom migration 0001, not in `schema.ts`, because drizzle-kit cannot express it.
+- The schema is frozen after Phase 2; further changes need an approved new migration.
+- `seedDemoData(db, { today, random })` is deterministic (mulberry32 seed 42, ids derived from the PRNG). Dev-only "Seed demo data" button on the Settings developer card.
+- Live hooks (`src/db/live.ts`) are thin `useLiveQuery` wrappers, checked by tsc only.
+
+## Phase 2 device verification pending (run in Phase 13)
+- Migrations applying on a real iOS and Android development build (first launch and upgrade).
+- `withTransaction` (BEGIN/COMMIT) on the expo-sqlite sync driver, including concurrent callers.
+- Live query hooks re-rendering after writes; the seed button on a device with the 3-year data set.
 
 ## Decisions
 - Design decisions and CLAUDE.md diffs D1–D15: `docs/superpowers/specs/2026-10-05-trek-design.md`.

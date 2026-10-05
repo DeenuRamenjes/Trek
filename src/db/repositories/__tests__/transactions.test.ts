@@ -14,6 +14,19 @@ beforeEach(() => {
 });
 
 describe('withTransaction', () => {
+  it('serializes concurrent calls on the same db so both commit', async () => {
+    const a = withTransaction(db, async (tx) => {
+      await r.createGroup(tx, { name: 'A', color: '#111111', icon: 'star' });
+      await new Promise((res) => setTimeout(res, 20));
+      await r.createGroup(tx, { name: 'A2', color: '#111111', icon: 'star' });
+    });
+    const b = withTransaction(db, async (tx) => {
+      await r.createGroup(tx, { name: 'B', color: '#111111', icon: 'star' });
+    });
+    await expect(Promise.all([a, b])).resolves.toBeDefined();
+    expect(count('groups')).toBe(3);
+  });
+
   it('commits on success and returns the result', async () => {
     const out = await withTransaction(db, async (tx) => (await r.createGroup(tx, { name: 'A', color: '#111111', icon: 'star' })).name);
     expect(out).toBe('A');
