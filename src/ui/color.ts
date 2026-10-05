@@ -127,3 +127,13 @@ export function tonalPalette(hex: string): TonalPalette {
 export function readableOn(background: string): '#000000' | '#FFFFFF' {
   return contrastRatio('#000000', background) >= contrastRatio('#FFFFFF', background) ? '#000000' : '#FFFFFF';
 }
+
+/** Hue 0-360, saturation and lightness 0-1 of a hex color. */
+export function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  return rgbToHsl(hexToRgb(hex));
+}
+
+/** Hex color from hue 0-360, saturation and lightness 0-1. */
+export function hslToHex(hsl: { h: number; s: number; l: number }): string {
+  return rgbToHex(hslToRgb(hsl));
+}

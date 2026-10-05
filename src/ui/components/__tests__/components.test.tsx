@@ -7,7 +7,7 @@ import { renderWithTheme } from '../../../test/renderWithTheme';
 import { expectAllButtonsLabelled } from '../../../test/a11y';
 import { ThemeProvider, useTheme } from '../../ThemeProvider';
 import { buildColors, minTapTarget, StatusKey } from '../../tokens';
-import { AppText, Banner, Button, Card, GoalIcon, IconButton, Screen, SegmentedControl, StatusGlyph, statusLabel } from '..';
+import { AppText, Banner, Button, Card, ColorPicker, GoalIcon, IconButton, Screen, SegmentedControl, StatusGlyph, statusLabel } from '..';
 
 function ModeProbe() {
   const { mode, colors } = useTheme();
@@ -157,5 +157,27 @@ describe('components', () => {
       );
       expect(screen.getByText('Reading')).toBeTruthy();
     }
+  });
+});
+
+describe('ColorPicker', () => {
+  it('fails the AA badge for a light yellow on the light surface', async () => {
+    await renderWithTheme(<ColorPicker value="#FFF59D" onChange={jest.fn()} />);
+    expect(screen.getByText(strings.goalForm.contrastFail)).toBeTruthy();
+  });
+
+  it('passes the AA badge for a curated palette color and reports picks', async () => {
+    const onChange = jest.fn();
+    await renderWithTheme(<ColorPicker value="#2E7D5B" onChange={onChange} />);
+    expect(screen.getByText(strings.goalForm.contrastPass)).toBeTruthy();
+    await fireEvent.press(screen.getByLabelText(strings.goalForm.chooseColor(2)));
+    expect(onChange).toHaveBeenCalledWith('#2F6FB0');
+  });
+
+  it('accepts a typed hex color', async () => {
+    const onChange = jest.fn();
+    await renderWithTheme(<ColorPicker value="#2E7D5B" onChange={onChange} />);
+    await fireEvent.changeText(screen.getByLabelText(strings.goalForm.customColorHex), '#808080');
+    expect(onChange).toHaveBeenCalledWith('#808080');
   });
 });

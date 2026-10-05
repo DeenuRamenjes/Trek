@@ -19,26 +19,35 @@ export async function addScheduleVersion(
   version: ScheduleVersionInput,
   slots: SlotInput[] = [],
 ): Promise<ScheduleVersion> {
-  return withTransaction(db, async (tx) => {
-    await tx
-      .delete(goalScheduleVersions)
-      .where(and(eq(goalScheduleVersions.goalId, goalId), eq(goalScheduleVersions.effectiveFrom, effectiveFrom)));
-    const id = newId();
-    await tx.insert(goalScheduleVersions).values({
-      id,
-      goalId,
-      effectiveFrom,
-      scheduleType: version.scheduleType,
-      scheduleDays: version.scheduleDays,
-      everyNDays: version.everyNDays ?? null,
-      timesPerWeek: version.timesPerWeek ?? null,
-      createdAt: nowIso(),
-    });
-    for (const s of slots) {
-      await tx.insert(goalSlots).values({ id: newId(), scheduleVersionId: id, weekday: s.weekday, time: s.time, label: s.label ?? null });
-    }
-    return (await tx.select().from(goalScheduleVersions).where(eq(goalScheduleVersions.id, id)))[0];
+  return withTransaction(db, (tx) => addScheduleVersionTx(tx, goalId, effectiveFrom, version, slots));
+}
+
+/** addScheduleVersion without its own transaction; call only inside an open withTransaction. */
+export async function addScheduleVersionTx(
+  tx: TrekDb,
+  goalId: string,
+  effectiveFrom: string,
+  version: ScheduleVersionInput,
+  slots: SlotInput[] = [],
+): Promise<ScheduleVersion> {
+  await tx
+    .delete(goalScheduleVersions)
+    .where(and(eq(goalScheduleVersions.goalId, goalId), eq(goalScheduleVersions.effectiveFrom, effectiveFrom)));
+  const id = newId();
+  await tx.insert(goalScheduleVersions).values({
+    id,
+    goalId,
+    effectiveFrom,
+    scheduleType: version.scheduleType,
+    scheduleDays: version.scheduleDays,
+    everyNDays: version.everyNDays ?? null,
+    timesPerWeek: version.timesPerWeek ?? null,
+    createdAt: nowIso(),
   });
+  for (const s of slots) {
+    await tx.insert(goalSlots).values({ id: newId(), scheduleVersionId: id, weekday: s.weekday, time: s.time, label: s.label ?? null });
+  }
+  return (await tx.select().from(goalScheduleVersions).where(eq(goalScheduleVersions.id, id)))[0];
 }
 
 export async function listScheduleVersions(db: TrekDb, goalId: string): Promise<ScheduleVersion[]> {
