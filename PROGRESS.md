@@ -6,7 +6,8 @@
 | 0 Design | Complete — awaiting design approval (CLAUDE.md §7.0) |
 | 1 Scaffold, motion, tabs, splash | Complete |
 | 2 Data | Complete (device verification pending) |
-| 3–13 | Not started |
+| 3 Domain | Complete |
+| 4–13 | Not started |
 
 ## Phase 0 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
@@ -41,6 +42,24 @@
 - `useLiveGoals` includes archived goals; the feature layer filters (unlike `listGoals`).
 - `endVacationNow` sets endDate = today - 1; confirm that UX in Phase 6.
 - Live hooks (`src/db/live.ts`) are thin `useLiveQuery` wrappers, checked by tsc only.
+
+## Phase 3 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no output.
+- `npx jest`: `Test Suites: 41 passed, 41 total`; `Tests: 455 passed, 455 total`; `Snapshots: 1 passed, 1 total`.
+
+## Phase 3 decisions
+- Weekday convention: ISO everywhere in the domain, 0 = Monday ... 6 = Sunday, bit 0 of `scheduleDays` = Monday; the `weekStart` setting stays date-fns style (0 = Sunday, default 1). The notifications service converts planner weekdays to the platform's numbering.
+- Vacation status is returned only when the day is otherwise due; otherwise the day is `not-due`.
+- Unlogged past `timesPerWeek` days are neutral (never `missed`); the week is scored as a unit.
+- Weekly adjusted target = min(ceil(target * (eligible - vacation) / eligible), eligible - vacation), so it never exceeds the available days.
+- Insight magnitudes (review builder): percentage points for improved/declined (minimum 5), streak days for streak insights, 5 per skip for skip patterns (at least 2 skips on a weekday), 15 for a perfect finished period; top 3 kept.
+- Reminder planner: output has no user-facing text (`contentKey`, `goalName` only; notes are never included). A reminder's fire instant is local `weekday + time + offsetMin`; its logical date is `logicalDate(fire, dayEndsAt)`, which maps times before `dayEndsAt` to the previous logical day. Quiet hours apply to every category. Monthly review is planned as the next two 1sts (date triggers); backup reminder as one date trigger at the next 10:00 when overdue. IDs: `goal:<reminderId>:weekly|<iso>`, `review:weekly`, `review:monthly:<iso>`, `backup:<iso>`.
+- Action queue ids are `source|goalId|date|slotId-or--|action|nonce`; `processQueue` drops processed rows, known processed ids and repeated ids, ordered by `createdAt`.
+- Widget snapshot lists goals due today with status done/partial/pending (skipped, vacation and not-due goals are left out); the group is passed as `groupGoalIds`.
+
+## Phase 3 carried forward
+- Phase 13: stats performance check with the 3-year seed (goals x logs); `completion`/`dailySeries` scan logs per goal-day.
+- Phase 8: the reconciler converts ISO weekday to the expo-notifications weekday (1 = Sunday) and renders strings from `contentKey`.
 
 ## Phase 2 device verification pending (run in Phase 13)
 - Migrations applying on a real iOS and Android development build (first launch and upgrade).
