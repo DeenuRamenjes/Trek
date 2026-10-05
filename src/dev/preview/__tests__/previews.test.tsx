@@ -15,6 +15,9 @@ describe('design preview registry', () => {
     expect(isPreviewKey('today')).toBe(true);
     expect(isPreviewKey('nope')).toBe(false);
     expect(isPreviewKey(undefined)).toBe(false);
+    expect(isPreviewKey('constructor')).toBe(false);
+    expect(isPreviewKey('toString')).toBe(false);
+    expect(isPreviewKey('__proto__')).toBe(false);
   });
 });
 

@@ -25,5 +25,5 @@ export const previewScreens: Record<PreviewKey, ComponentType> = {
 export const previewKeys = Object.keys(previewScreens) as PreviewKey[];
 
 export function isPreviewKey(value: unknown): value is PreviewKey {
-  return typeof value === 'string' && value in previewScreens;
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(previewScreens, value);
 }
