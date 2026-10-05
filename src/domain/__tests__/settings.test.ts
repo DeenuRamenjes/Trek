@@ -52,6 +52,17 @@ describe('parseSettings', () => {
     });
   });
 
+  it('falls back per nested field, keeping valid siblings', () => {
+    const s = parseSettings({
+      appLock: { enabled: true, timeout: '2m' },
+      widget: { hideGoalNames: true, groupId: 5 },
+      reviewNotifications: 'bad',
+    });
+    expect(s.appLock).toEqual({ enabled: true, timeout: 'immediate', hideInAppSwitcher: true });
+    expect(s.widget).toEqual({ hideGoalNames: true });
+    expect(s.reviewNotifications).toEqual({ weekly: true, monthly: true });
+  });
+
   it('drops unknown keys', () => {
     expect(parseSettings({ legacy: 1 })).not.toHaveProperty('legacy');
   });

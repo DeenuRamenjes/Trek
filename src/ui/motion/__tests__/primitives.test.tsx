@@ -175,6 +175,46 @@ describe('Collapse', () => {
     );
     expect(screen.getByText('Details')).toBeTruthy();
   });
+
+  type Props = { layout?: unknown; entering?: unknown; exiting?: unknown };
+  function animatedProps(): Props[] {
+    const out: Props[] = [];
+    const walk = (node: unknown) => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (node === null || typeof node !== 'object') return;
+      const { props, children } = node as { props?: Props; children?: unknown };
+      if (props && ('layout' in props || 'entering' in props || 'exiting' in props)) out.push(props);
+      walk(children);
+    };
+    walk(screen.toJSON());
+    return out;
+  }
+
+  it('passes layout, entering and exiting animations in full motion', async () => {
+    await renderWithTheme(
+      <Collapse open>
+        <Text>Details</Text>
+      </Collapse>,
+    );
+    const props = animatedProps();
+    expect(props.some((p) => p.layout !== undefined)).toBe(true);
+    expect(props.some((p) => p.entering !== undefined)).toBe(true);
+    expect(props.some((p) => p.exiting !== undefined)).toBe(true);
+  });
+
+  it('passes no layout, entering or exiting animation under reduce motion', async () => {
+    reduceMotion();
+    await renderWithTheme(
+      <Collapse open>
+        <Text>Details</Text>
+      </Collapse>,
+    );
+    for (const p of animatedProps()) {
+      expect(p.layout).toBeUndefined();
+      expect(p.entering).toBeUndefined();
+      expect(p.exiting).toBeUndefined();
+    }
+  });
 });
 
 describe('AnimatedCheck', () => {

@@ -1,6 +1,6 @@
 import { createMMKV } from 'react-native-mmkv';
 import { create } from 'zustand';
-import { DEFAULT_SETTINGS, parseSettings, Settings } from '../../domain/settings';
+import { applySettingsPatch, DEFAULT_SETTINGS, parseSettings, Settings } from '../../domain/settings';
 
 /** The subset of MMKV the settings store uses; lets tests pass an in-memory fake. */
 export type KeyValueStorage = {
@@ -31,7 +31,7 @@ export function createSettingsStore(storage: KeyValueStorage) {
   return create<SettingsState>()((set, get) => ({
     settings: loadSettings(storage),
     update: (patch) => {
-      const next = parseSettings({ ...get().settings, ...patch });
+      const next = applySettingsPatch(get().settings, patch);
       storage.set(SETTINGS_KEY, JSON.stringify(next));
       set({ settings: next });
     },

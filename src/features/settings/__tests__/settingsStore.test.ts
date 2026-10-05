@@ -47,8 +47,10 @@ describe('settings store', () => {
 
   it('ignores invalid patch values', () => {
     const store = createSettingsStore(memoryStorage());
-    store.getState().update({ dayEndsAt: 12 });
-    expect(store.getState().settings.dayEndsAt).toBe(0);
+    store.getState().update({ dayEndsAt: 3, theme: 'dark' });
+    store.getState().update({ dayEndsAt: 12, theme: 'purple' as never });
+    expect(store.getState().settings.dayEndsAt).toBe(3);
+    expect(store.getState().settings.theme).toBe('dark');
   });
 
   it('reset clears storage and restores defaults', () => {

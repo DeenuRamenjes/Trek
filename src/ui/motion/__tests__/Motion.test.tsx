@@ -43,3 +43,40 @@ describe('Motion', () => {
     expect(styleOf('m').transform[2]).toEqual({ scale: 0.5 });
   });
 });
+
+describe('Motion transition identity', () => {
+  it('does not restart mid-flight when the parent passes an equal new transition object', async () => {
+    const view = await render(<Motion testID="m" from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 'base' }} />);
+    await act(async () => {
+      jest.advanceTimersByTime(130);
+    });
+    await view.rerender(<Motion testID="m" from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 'base' }} />);
+    await act(async () => {
+      jest.advanceTimersByTime(130);
+    });
+    expect(styleOf('m').opacity).toBe(1);
+  });
+});
+
+describe('Motion exit', () => {
+  function exitingOf(testID: string) {
+    return screen.getByTestId(testID).props.exiting as unknown;
+  }
+
+  it('passes an exiting animation in full motion and removes the view after unmount', async () => {
+    const view = await render(<Motion testID="m" exit={{ opacity: 0 }} />);
+    expect(typeof exitingOf('m')).toBe('function');
+    await view.unmount();
+  });
+
+  it('passes no exiting animation under reduce motion', async () => {
+    useSettings.getState().update({ reduceMotionOverride: 'on' });
+    await render(<Motion testID="m" exit={{ opacity: 0 }} />);
+    expect(exitingOf('m')).toBeUndefined();
+  });
+
+  it('passes no exiting animation without `exit`', async () => {
+    await render(<Motion testID="m" />);
+    expect(exitingOf('m')).toBeUndefined();
+  });
+});

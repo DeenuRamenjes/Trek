@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useMemo } from 'react';
 import type { StyleProp, ViewProps, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { animateValue, MotionTransition, MotionValues, resolveValues, toStyle } from './animate';
@@ -20,7 +20,14 @@ export type MotionProps = Omit<ViewProps, 'style'> & {
  * Framer Motion-style view on Reanimated 4 (CLAUDE.md §1). Animates only transform and opacity.
  * With reduce motion on, every value jumps straight to its target and no exit animation runs.
  */
-export function Motion({ from, animate, exit, transition, style, children, ...rest }: MotionProps) {
+export function Motion({ from, animate, exit, transition: transitionProp, style, children, ...rest }: MotionProps) {
+  // Inline transition objects change identity every render; depend on their primitives so a
+  // parent re-render never rebuilds the animated style mid-flight.
+  const { type, duration, easing, spring, delay } = transitionProp ?? {};
+  const transition = useMemo<MotionTransition>(
+    () => ({ type, duration, easing, spring, delay }),
+    [type, duration, easing, spring, delay],
+  );
   const reduce = useReduceMotion();
   const target = resolveValues(animate);
   const current = useSharedValue(reduce ? target : resolveValues(from ?? animate));
