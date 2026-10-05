@@ -6,11 +6,17 @@ export type LockState = {
   failures: number;
   /** Epoch ms when the app went to the background; null while in the foreground. */
   backgroundedAt: number | null;
+  /** True while the system auth prompt is open; its own background/foreground transitions are ignored. */
+  authInFlight: boolean;
+  /** Counts foreground re-locks, so a screen that is already showing can prompt again. */
+  relocks: number;
 };
 
 export type LockEvent =
   | { type: 'background'; at: number }
   | { type: 'foreground'; at: number; enabled: boolean; timeout: LockTimeout }
+  | { type: 'authStarted' }
+  | { type: 'authEnded' }
   | { type: 'failure' }
   | { type: 'success' }
   | { type: 'disabled' };
@@ -31,26 +37,33 @@ export function timeoutMs(timeout: LockTimeout): number {
 
 /** A cold start is locked when the lock is enabled. */
 export function createLockState(enabled: boolean): LockState {
-  return { locked: enabled, failures: 0, backgroundedAt: null };
+  return { locked: enabled, failures: 0, backgroundedAt: null, authInFlight: false, relocks: 0 };
 }
 
 export function lockReducer(state: LockState, event: LockEvent): LockState {
   switch (event.type) {
     case 'background':
+      if (state.authInFlight) return state;
       return state.backgroundedAt === null ? { ...state, backgroundedAt: event.at } : state;
     case 'foreground': {
+      if (state.authInFlight) return state;
       if (!event.enabled) return { ...state, locked: false, backgroundedAt: null };
       if (state.backgroundedAt === null) return state;
       const elapsed = event.at - state.backgroundedAt;
       // A clock that moved backwards cannot prove the timeout has not passed: lock.
       const expired = elapsed < 0 || elapsed >= timeoutMs(event.timeout);
-      return { ...state, locked: state.locked || expired, backgroundedAt: null };
+      const locked = state.locked || expired;
+      return { ...state, locked, backgroundedAt: null, relocks: locked && expired ? state.relocks + 1 : state.relocks };
     }
+    case 'authStarted':
+      return { ...state, authInFlight: true };
+    case 'authEnded':
+      return { ...state, authInFlight: false };
     case 'failure':
-      return { ...state, failures: state.failures + 1 };
+      return { ...state, failures: state.failures + 1, authInFlight: false };
     case 'success':
-      return { ...state, locked: false, failures: 0 };
+      return { ...state, locked: false, failures: 0, authInFlight: false };
     case 'disabled':
-      return { locked: false, failures: 0, backgroundedAt: null };
+      return createLockState(false);
   }
 }

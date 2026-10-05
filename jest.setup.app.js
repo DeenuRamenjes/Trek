@@ -29,6 +29,8 @@ jest.mock('victory-native', () => {
 // Biometrics and blur are native; tests drive the auth mock directly.
 jest.mock('expo-local-authentication', () => ({
   hasHardwareAsync: jest.fn(async () => true),
+  getEnrolledLevelAsync: jest.fn(async () => 2),
+  SecurityLevel: { NONE: 0, SECRET: 1, BIOMETRIC: 2, BIOMETRIC_WEAK: 2, BIOMETRIC_STRONG: 3 },
   isEnrolledAsync: jest.fn(async () => true),
   authenticateAsync: jest.fn(async () => ({ success: true })),
 }));

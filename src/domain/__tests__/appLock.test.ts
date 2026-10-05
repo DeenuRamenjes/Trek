@@ -90,11 +90,44 @@ describe('failures and success', () => {
   });
 });
 
+describe('auth in flight', () => {
+  it('ignores background and foreground while the prompt is open, then stays unlocked on success', () => {
+    let s = createLockState(true);
+    s = lockReducer(s, { type: 'authStarted' });
+    s = lockReducer(s, { type: 'background', at: 0 });
+    s = lockReducer(s, { type: 'foreground', at: 5, enabled: true, timeout: 'immediate' });
+    s = lockReducer(s, { type: 'success' });
+    expect(s.locked).toBe(false);
+    expect(s.authInFlight).toBe(false);
+    expect(s.backgroundedAt).toBeNull();
+  });
+
+  it('authEnded and failure clear the flag', () => {
+    const started = lockReducer(createLockState(true), { type: 'authStarted' });
+    expect(lockReducer(started, { type: 'authEnded' }).authInFlight).toBe(false);
+    expect(lockReducer(started, { type: 'failure' }).authInFlight).toBe(false);
+  });
+});
+
+describe('relocks', () => {
+  it('counts a foreground re-lock even when already locked', () => {
+    let s = createLockState(true);
+    s = lockReducer(s, { type: 'background', at: 0 });
+    s = lockReducer(s, { type: 'foreground', at: 1, enabled: true, timeout: 'immediate' });
+    expect(s.relocks).toBe(1);
+  });
+  it('does not count when the timeout has not passed', () => {
+    let s = lockReducer({ ...createLockState(false) }, { type: 'background', at: 0 });
+    s = lockReducer(s, { type: 'foreground', at: 1, enabled: true, timeout: '1m' });
+    expect(s.relocks).toBe(0);
+  });
+});
+
 describe('disabled event', () => {
   it('unlocks and clears state so re-enabling does not lock at once', () => {
     let s = createLockState(true);
     s = lockReducer(s, { type: 'failure' });
     s = lockReducer(s, { type: 'disabled' });
-    expect(s).toEqual({ locked: false, failures: 0, backgroundedAt: null });
+    expect(s).toEqual(createLockState(false));
   });
 });

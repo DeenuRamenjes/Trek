@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import * as LocalAuthentication from 'expo-local-authentication';
 import { AppState, Text, View } from 'react-native';
 import { DEFAULT_SETTINGS } from '../../../domain/settings';
+import { authenticate } from '../../../services/appLock';
 import { strings } from '../../../strings/en';
 import { ThemeProvider } from '../../../ui/ThemeProvider';
 import { useSettings } from '../../settings/settingsStore';
@@ -37,12 +38,13 @@ beforeEach(() => {
   setLock({});
   auth.hasHardwareAsync.mockResolvedValue(true);
   auth.isEnrolledAsync.mockResolvedValue(true);
+  auth.getEnrolledLevelAsync.mockResolvedValue(2);
   auth.authenticateAsync.mockResolvedValue({ success: true });
 });
 
 describe('SecurityScreen', () => {
   it('enabling fails without enrolment, explains and stays off', async () => {
-    auth.isEnrolledAsync.mockResolvedValue(false);
+    auth.getEnrolledLevelAsync.mockResolvedValue(0);
     await render(wrap(<SecurityScreen />));
     await fireEvent(screen.getByLabelText(t.appLockLabel), 'valueChange', true);
     expect(await screen.findByText(t.notEnrolled)).toBeTruthy();
@@ -59,6 +61,14 @@ describe('SecurityScreen', () => {
   });
 
   it('enabling with successful auth turns the lock on', async () => {
+    await render(wrap(<SecurityScreen />));
+    await fireEvent(screen.getByLabelText(t.appLockLabel), 'valueChange', true);
+    await waitFor(() => expect(get().appLock.enabled).toBe(true));
+  });
+
+  it('enabling works on a passcode-only device', async () => {
+    auth.isEnrolledAsync.mockResolvedValue(false);
+    auth.getEnrolledLevelAsync.mockResolvedValue(1);
     await render(wrap(<SecurityScreen />));
     await fireEvent(screen.getByLabelText(t.appLockLabel), 'valueChange', true);
     await waitFor(() => expect(get().appLock.enabled).toBe(true));
@@ -135,15 +145,65 @@ describe('LockGate', () => {
     expect(auth.authenticateAsync.mock.calls[0][0]).toMatchObject({ disableDeviceFallback: false });
   });
 
+  it('offers the passcode from the first try when no biometrics are enrolled', async () => {
+    setLock({ enabled: true });
+    auth.isEnrolledAsync.mockResolvedValue(false);
+    await render(wrap(<LockGate>{content}</LockGate>));
+    await waitFor(() => expect(auth.authenticateAsync).toHaveBeenCalled());
+    expect(auth.authenticateAsync.mock.calls[0][0]).toMatchObject({ disableDeviceFallback: false });
+  });
+
+  it('keeps biometrics-only on the first try when biometrics are enrolled', async () => {
+    setLock({ enabled: true });
+    await render(wrap(<LockGate>{content}</LockGate>));
+    await waitFor(() => expect(auth.authenticateAsync).toHaveBeenCalled());
+    expect(auth.authenticateAsync.mock.calls[0][0]).toMatchObject({ disableDeviceFallback: true });
+  });
+
+  it('waits for the splash before the auto-prompt', async () => {
+    setLock({ enabled: true });
+    const ui = (ready: boolean) => wrap(<LockGate promptReady={ready}>{content}</LockGate>);
+    const { rerender } = await render(ui(false));
+    expect(screen.getByTestId('lock-screen')).toBeTruthy();
+    expect(auth.authenticateAsync).not.toHaveBeenCalled();
+    await rerender(ui(true));
+    await waitFor(() => expect(auth.authenticateAsync).toHaveBeenCalledTimes(1));
+  });
+
+  it('ignores app state changes while the prompt is open', async () => {
+    setLock({ enabled: true, timeout: 'immediate' });
+    const emit = captureAppState();
+    let resolve!: (r: { success: true }) => void;
+    auth.authenticateAsync.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await render(wrap(<LockGate>{content}</LockGate>));
+    await act(async () => emit('background'));
+    await act(async () => emit('active'));
+    await act(async () => resolve({ success: true }));
+    await waitFor(() => expect(screen.queryByTestId('lock-screen')).toBeNull());
+  });
+
+  it('prompts again when the app re-locks while the lock screen is already showing', async () => {
+    setLock({ enabled: true, timeout: 'immediate' });
+    const emit = captureAppState();
+    auth.authenticateAsync.mockResolvedValue({ success: false, error: 'user_cancel' });
+    await render(wrap(<LockGate>{content}</LockGate>));
+    await waitFor(() => expect(auth.authenticateAsync).toHaveBeenCalledTimes(1));
+    await act(async () => emit('background'));
+    await act(async () => emit('active'));
+    await waitFor(() => expect(auth.authenticateAsync).toHaveBeenCalledTimes(2));
+  });
+
   it('locks again after backgrounding past the timeout', async () => {
     setLock({ enabled: true, timeout: 'immediate' });
     const emit = captureAppState();
     await render(wrap(<LockGate>{content}</LockGate>));
     await waitFor(() => expect(screen.queryByTestId('lock-screen')).toBeNull());
-    auth.authenticateAsync.mockReturnValueOnce(new Promise(() => undefined));
+    let release!: (r: { success: false; error: 'user_cancel' }) => void;
+    auth.authenticateAsync.mockReturnValueOnce(new Promise((r) => (release = r)));
     await act(async () => emit('background'));
     await act(async () => emit('active'));
     expect(screen.getByTestId('lock-screen')).toBeTruthy();
+    await act(async () => release({ success: false, error: 'user_cancel' }));
     jest.restoreAllMocks();
   });
 });
@@ -161,6 +221,26 @@ describe('PrivacyOverlay', () => {
     expect(screen.getByTestId('privacy-overlay', { includeHiddenElements: true })).toBeTruthy();
     await act(async () => emit('active'));
     expect(screen.queryByTestId('privacy-overlay', { includeHiddenElements: true })).toBeNull();
+  });
+
+  it('stays hidden while the auth prompt is open', async () => {
+    setLock({ enabled: true });
+    const emit = withAppState();
+    let resolve!: (r: { success: true }) => void;
+    auth.authenticateAsync.mockReturnValueOnce(new Promise((r) => (resolve = r)));
+    await render(wrap(<View><PrivacyOverlay /></View>));
+    await act(async () => emit('inactive'));
+    expect(screen.getByTestId('privacy-overlay', { includeHiddenElements: true })).toBeTruthy();
+    let pending!: Promise<unknown>;
+    await act(async () => {
+      pending = authenticate({ promptMessage: 'x', allowPasscode: false });
+    });
+    expect(screen.queryByTestId('privacy-overlay', { includeHiddenElements: true })).toBeNull();
+    await act(async () => {
+      resolve({ success: true });
+      await pending;
+    });
+    expect(screen.getByTestId('privacy-overlay', { includeHiddenElements: true })).toBeTruthy();
   });
 
   it('stays hidden when the lock is off', async () => {

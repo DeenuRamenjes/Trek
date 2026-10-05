@@ -7,7 +7,7 @@ import { strings } from '../../strings/en';
 import { AppText, Card, IconButton, Screen, SegmentedControl } from '../../ui/components';
 import { uiIcons } from '../../ui/icons';
 import { useTheme } from '../../ui/ThemeProvider';
-import { spacing } from '../../ui/tokens';
+import { minTapTarget, spacing } from '../../ui/tokens';
 import { useSettings } from '../settings/settingsStore';
 
 type Notice = 'notEnrolled' | 'authFailed' | null;
@@ -101,5 +101,5 @@ export function SecurityScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: minTapTarget },
 });

@@ -62,7 +62,7 @@ export default function RootLayout() {
           <ThemedSystemBars />
           <DbProvider>
             <NotificationsLifecycle />
-            <LockGate>
+            <LockGate promptReady={splashDone}>
               <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
             </LockGate>
           </DbProvider>

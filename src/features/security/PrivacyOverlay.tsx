@@ -4,12 +4,14 @@ import { AppState, StyleSheet, View } from 'react-native';
 import { strings } from '../../strings/en';
 import { TrekMark } from '../../ui/components/TrekMark';
 import { useTheme } from '../../ui/ThemeProvider';
+import { useAuthPromptOpen } from '../../services/appLock';
 import { useSettings } from '../settings/settingsStore';
 
 /** Blurred cover with the logo while the app is inactive or backgrounded, so the app switcher shows nothing. */
 export function PrivacyOverlay() {
   const { colors, mode } = useTheme();
   const { enabled, hideInAppSwitcher } = useSettings((s) => s.settings.appLock);
+  const promptOpen = useAuthPromptOpen();
   const [appState, setAppState] = useState(AppState.currentState);
 
   useEffect(() => {
@@ -17,7 +19,8 @@ export function PrivacyOverlay() {
     return () => sub.remove();
   }, []);
 
-  if (!enabled || !hideInAppSwitcher || appState !== 'inactive' && appState !== 'background') return null;
+  const covered = appState === 'inactive' || appState === 'background';
+  if (!enabled || !hideInAppSwitcher || !covered || promptOpen) return null;
 
   return (
     <BlurView

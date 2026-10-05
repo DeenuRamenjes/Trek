@@ -194,7 +194,7 @@ These review notes were deferred to the phase that builds on the affected code. 
 
 ## Phase 9 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no errors.
-- `npx jest`: Test Suites: 75 passed, 75 total; Tests: 665 passed, 665 total.
+- `npx jest`: Test Suites: 75 passed, 75 total; Tests: 676 passed, 676 total (after final-review fixes).
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported: dist.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported: dist.
 
@@ -206,6 +206,7 @@ These review notes were deferred to the phase that builds on the affected code. 
 - Enabling requires `hasHardwareAsync` and `isEnrolledAsync` and a successful authentication; otherwise a notice explains and the lock stays off. No PIN is stored.
 - `LockGate` wraps the navigator inside `DbProvider`; the animated splash and `PrivacyOverlay` sit above it, so the splash is the only thing not covered by the lock.
 - `expo-blur` ships no config plugin, so only `expo-local-authentication` (with `faceIDPermission`) is in `app.json`.
+- Final-review fixes: enrolment uses `getEnrolledLevelAsync() >= SecurityLevel.SECRET` (passcode-only devices allowed); passcode offered from the first try when no biometrics are enrolled; AppState transitions are ignored while the auth prompt is open (reducer `authInFlight`); the privacy overlay hides during the prompt; the lock screen re-prompts on a foreground re-lock and waits for the splash before its auto-prompt.
 - The Phase 8 reconciler test for lock-on notification content (generic body, no notes) already existed and was kept.
 
 ## Phase 9 device verification pending (run in Phase 13)

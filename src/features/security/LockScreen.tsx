@@ -15,20 +15,24 @@ type Props = {
   failures: number;
   /** Opens the system prompt; also called once when the screen appears. */
   onUnlock: () => void;
+  /** Changes when the app re-locks while this screen is showing; triggers another prompt. */
+  promptKey: number;
+  /** False while the splash is on top; the auto-prompt waits. */
+  promptReady: boolean;
 };
 
 const SHAKE_PX = 12;
 
-export function LockScreen({ failures, onUnlock }: Props) {
+export function LockScreen({ failures, onUnlock, promptKey, promptReady }: Props) {
   const { colors } = useTheme();
   const reduce = useReduceMotion();
   const x = useSharedValue(0);
 
   useEffect(() => {
-    onUnlock();
-    // Once on appear.
+    if (promptReady) onUnlock();
+    // On appear (once the splash is gone) and on each re-lock.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [promptKey, promptReady]);
 
   useEffect(() => {
     if (failures === 0) return;
