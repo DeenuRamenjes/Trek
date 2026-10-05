@@ -1,6 +1,6 @@
-# CLAUDE.md — Daily Goals (project spec, source of truth)
+# CLAUDE.md — Trek (project spec, source of truth)
 
-You are a senior React Native engineer who ships polished, offline-first Expo apps with refined motion design. Build "Daily Goals", a frontend-only mobile goal-tracking app for iOS and Android. NO backend, NO accounts, NO network calls, NO analytics. All data lives on-device.
+You are a senior React Native engineer who ships polished, offline-first Expo apps with refined motion design. Build "Trek", a frontend-only mobile goal-tracking app for iOS and Android. NO backend, NO accounts, NO network calls, NO analytics. All data lives on-device.
 
 Re-read this file at the start of every session. Keep `PROGRESS.md` updated (see "Working rules").
 
@@ -12,10 +12,11 @@ Re-read this file at the start of every session. Keep `PROGRESS.md` updated (see
   expo-sqlite, drizzle-orm, drizzle-kit, react-native-mmkv, zustand, zod, react-hook-form, date-fns, expo-localization,
   expo-notifications, expo-background-task, expo-file-system, expo-sharing, expo-document-picker,
   @office-kit/xlsx, jszip,
-  react-native-reanimated (v4), moti, react-native-gesture-handler, @shopify/react-native-skia, victory-native, expo-haptics, expo-splash-screen,
+  react-native-reanimated (v4), react-native-gesture-handler, @shopify/react-native-skia, victory-native, expo-haptics, expo-splash-screen,
   expo-local-authentication, expo-widgets (iOS), react-native-android-widget (Android),
   jest, @testing-library/react-native.
-- NEVER install framer-motion. It is web-only. "Framer Motion-style" in this spec means Moti's `from`/`animate`/`exit`/`transition` API.
+- Implied peers and tooling (approved): react-native-worklets, react-native-nitro-modules, react-native-screens, react-native-safe-area-context, expo-linking, expo-constants, expo-task-manager, expo-dev-client, test-renderer, typescript, @types/react, @types/jest, jest-expo, babel-plugin-inline-import, expo-crypto, expo-system-ui, expo-status-bar, expo-font, @expo/vector-icons, expo-blur.
+- NEVER install framer-motion. It is web-only. "Framer Motion-style" in this spec means the `from`/`animate`/`exit`/`transition` props of the `src/ui/motion` primitives, implemented on Reanimated 4. Moti is not used because it depends on framer-motion.
 - STOP and ask before:
   - adding any other dependency;
   - changing the DB schema after Phase 2 (except via a new migration that I approve);
@@ -39,6 +40,7 @@ src/domain/               scheduleEngine · dayBoundary · streaks · statsCalcu
 src/db/                   Drizzle schema, migrations, repositories, live queries
 src/services/             notificationsReconciler · actionQueueProcessor · widgetBridge · xlsxExporter · xlsxImporter · jsonBackup · csvExporter · autoBackup · appLock · errorLog
 ```
+Identifiers: bundle id `com.deenuramenjes.trek`, App Group `group.com.deenuramenjes.trek`, URL scheme `trek`.
 
 ## 3. Data model
 SQLite via Drizzle. UUID ids, versioned migrations, timestamps as ISO strings, dates as `YYYY-MM-DD` in the app's logical day (see 4.2).
@@ -50,11 +52,15 @@ SQLite via Drizzle. UUID ids, versioned migrations, timestamps as ISO strings, d
 - `reminders`: id, goalId, slotId?, weekday, time 'HH:mm', offsetMin, enabled
 - `groups`: id, name, color, icon, sortOrder, createdAt, updatedAt
 - `group_goals`: groupId, goalId (many-to-many)
+- `goal_pauses`: id, goalId, startDate, endDate? (null = still paused), createdAt, updatedAt
+  - `goals.pausedAt` marks a goal as currently paused; pause history lives in `goal_pauses`.
 - `logs`: id, goalId, date, slotId?, value, status[done|partial|skipped], note? (max 1000 chars), loggedAt, updatedAt
   - "missed" is NEVER stored (see 4.3).
+  - Unique per (goalId, date, slotId); a null slotId counts as one value.
 - `vacations`: id, startDate, endDate, scope[all|selected], note?, createdAt, updatedAt
 - `vacation_goals`: vacationId, goalId
 - `pending_actions`: id, source[notification|widget], goalId, date, slotId?, action[done|increment|skip|snooze], value?, createdAt, processedAt?
+  - `id` is a deterministic idempotency key (see 4.7), not a UUID.
 
 Settings live in MMKV via Zustand:
 - `theme`[system|light|dark], `accentColor`, `weekStart`, `timeFormat`[12h|24h], `haptics`, `reduceMotionOverride`[system|on|off]
@@ -74,11 +80,11 @@ Settings live in MMKV via Zustand:
 
 ### 4.1 Schedules
 A day is "due" for a goal only if all of these hold:
-- The date is on or after `startDate`, before the end (`endDate` or `startDate + targetDays`), and the goal is neither paused nor archived on that date.
+- The date is on or after `startDate`, on or before `endDate` (inclusive) or within the `targetDays` days starting at `startDate`, no `goal_pauses` range covers the date, and the goal is not archived on that date.
 - The schedule version effective on that date says the day is due.
 - The goal is not covered by a vacation on that date.
 
-Always score a day against the schedule version that was effective THAT day.
+Always score a day against the schedule version that was effective THAT day. `everyNDays` counts from the effective version's `effectiveFrom`.
 
 ### 4.2 Logical day
 A timestamp belongs to the logical date `localDate(timestamp − dayEndsAt hours)`. All check-ins, stats, reminders and widgets use this.
@@ -93,12 +99,16 @@ A day's status is computed, never stored as "missed":
 - **pending**: today, not yet complete.
 - **not-due**: otherwise.
 
+Check goals with slots are done when every slot is done and partial when some are. Count, duration and value goals have a per-day target; the day's value is the sum of its logs. Every target means "at least".
+
+`timesPerWeek` goals are scored per week: unlogged days are neutral; after the week ends, missed = adjusted target − credited days.
+
 ### 4.4 Streaks
 - **Daily-type schedules:** a streak counts consecutive due days that are done. Skipped, vacation and not-due days are neutral: they neither break nor extend the streak. A partial or missed day breaks it.
 - **timesPerWeek goals:** a streak counts consecutive weeks (respecting `weekStart`) in which completed days reach the target. Vacation days reduce that week's target proportionally (round up). The current week is pending until it ends.
 
 ### 4.5 Stats
-`completion % = done / (due − skipped − vacation)`. Partial counts as `value/target` in the "weighted" mode and as 0 in "strict" mode. Default to weighted, toggle on the Stats tab.
+`completion % = done / (due − skipped − vacation)`. Partial counts as `value/target` in the "weighted" mode and as 0 in "strict" mode. Default to weighted, toggle on the Stats tab. `timesPerWeek` goals contribute one unit per ended week.
 
 ### 4.6 Time zones
 Dates and reminders follow the device's current local time zone. On app foreground, compare it with `lastKnownTimeZone`. If it changed, re-run the reminder reconciler and refresh the widgets.
@@ -110,7 +120,7 @@ Notification and widget actions are written to `pending_actions` first, then pro
 
 ### 5.1 Splash and motion system
 - `expo-splash-screen` shows a static native splash (app icon on the theme background). It is held until fonts, DB migrations and settings are ready.
-- Then hand off to an animated splash built with Moti and Reanimated (Skia allowed for the logo stroke):
+- Then hand off to an animated splash built with `src/ui/motion` (Reanimated 4) (Skia allowed for the logo stroke):
   - logo draw-in or scale-up with spring;
   - app name fades and slides up;
   - total ≤ 1.2 s;
@@ -121,7 +131,7 @@ Notification and widget actions are written to `pending_actions` first, then pro
   - Primitives: FadeIn, SlideUp, ScaleIn, Stagger, PressableScale, AnimatedNumber, Skeleton, Collapse, AnimatedCheck.
 - Required animations:
   - screen transitions;
-  - list items staggering in on mount and animating on exit (Moti `exit` / Reanimated layout animations);
+  - list items staggering in on mount and animating on exit (Reanimated entering/exiting layout animations);
   - check-off: checkmark draw, haptic, and a confetti burst on a streak milestone (7/30/100);
   - progress rings and charts animating to their values;
   - animated tab bar indicator;
@@ -132,8 +142,8 @@ Notification and widget actions are written to `pending_actions` first, then pro
   - the theme change cross-fade;
   - the app-lock screen.
 - Every animation MUST collapse to instant when reduce motion is on (system setting or `reduceMotionOverride`).
-- Animate only transform and opacity. Target 60 fps on a mid-range Android device.
-- Moti compatibility: in Phase 1, verify that Moti works with the installed Reanimated 4. If it doesn't, STOP and propose implementing the same primitives with Reanimated 4 layout animations and CSS transitions behind the identical `src/ui/motion` API.
+- Animate only transform and opacity; Reanimated layout transitions (entering, exiting, list reflow, Collapse) are the only exception. Target 60 fps on a mid-range Android device.
+- Reanimated 4 check: in Phase 1, verify Reanimated 4 layout animations, CSS transitions and reduce motion on the New Architecture via a dev-only `/motion-check` screen.
 
 ### 5.2 Goals
 - Create, edit, duplicate, pause, archive and reorder (drag) goals.
@@ -143,7 +153,7 @@ Notification and widget actions are written to `pending_actions` first, then pro
   - Tracking type and target.
   - Duration: target days, end date, or open-ended.
   - Reminders.
-  - Appearance: a curated palette valid in light and dark mode, a custom picker with a WCAG AA contrast check, and an icon or emoji.
+  - Appearance: a curated palette valid in light and dark mode, a custom picker with a WCAG AA contrast check, and an icon from a curated `@expo/vector-icons` set.
 - Templates: Water, Workout, Reading, Meditation.
 
 ### 5.3 Today tab
@@ -157,7 +167,8 @@ Notification and widget actions are written to `pending_actions` first, then pro
 ### 5.4 Groups
 Create and reorder groups. Add goals by multi-select. Each group has a color and icon. A goal can belong to multiple groups.
 
-### 5.5 Stats tab (home)
+### 5.5 Stats tab (dashboard)
+The app opens on the Today tab.
 - A top dropdown listing the groups plus "All goals".
 - If `homeEmptyStateMode=requireGroup` and no groups exist, show the empty state "Create a group with goals to see statistics" with a call-to-action button. Otherwise default to "All goals" with a soft "Create a group" card.
 - Charts:
@@ -197,7 +208,7 @@ Create and reorder groups. Add goals by multi-select. Each group has a color and
 - Optional notifications: weekly on Sunday at 19:00 (or the last day of the week per `weekStart`), and monthly on the 1st at 09:00. Both deep-link to the review.
 
 ### 5.9 Reminders
-- Use `expo-notifications` with repeating weekly calendar triggers, one per weekday + time.
+- Use `expo-notifications`. The planner looks 14 days ahead: a reminder whose every occurrence in that window is due becomes one repeating weekly calendar trigger (weekday + time); otherwise each due occurrence becomes a one-shot date trigger (everyNDays, vacations, pauses, end dates, timesPerWeek after the quota is met). Reminders inside quiet hours are suppressed.
 - A reconciler computes the desired set via `reminderPlanner` from the DB. The planner accounts for schedule versions, vacations, pauses, quiet hours and `dayEndsAt`. The reconciler diffs the desired set against pending notifications and schedules or cancels only the difference.
 - It MUST keep iOS pending notifications at 64 or fewer. Priority order: soonest goal reminders, then review reminders, then the backup reminder.
 - When to run it: on app foreground, after any change to goals, reminders, vacations or settings, after import, after a time-zone change, and in `expo-background-task`.
@@ -232,12 +243,12 @@ Settings → Security. Off by default and enabled only if the user turns it on.
     - Every formula cell MUST carry its app-computed cached result.
     - Streak and missed cells hold app-computed values labeled "calculated by app".
     - Use data bars and color scales for emphasis.
-  - **Raw tables:** Goals, ScheduleVersions, Slots, Reminders, Groups, GroupGoals, Logs, Vacations, VacationGoals.
+  - **Raw tables:** Goals, ScheduleVersions, Slots, Reminders, Groups, GroupGoals, GoalPauses, Logs, Vacations, VacationGoals.
     - Frozen header rows and stable IDs.
     - ID, date and time columns are formatted as TEXT.
     - Sheets are protected without a password.
   - **Settings** (excluding the app-lock state).
-  - **_Meta:** schemaVersion, appVersion, exportedAt, format "daily-goals-xlsx".
+  - **_Meta:** schemaVersion, appVersion, exportedAt, format "trek-xlsx".
 
 **Import** (xlsx, JSON or CSV zip via `expo-document-picker`)
 - Read ONLY the raw sheets plus _Meta.
@@ -272,7 +283,7 @@ Settings → Security. Off by default and enabled only if the user turns it on.
   - a "done/total" ring;
   - small: ring plus count; medium: up to 4 goals.
 - **Interaction:** tapping a goal row marks it done, or increments it for count goals. Use interactive widgets where the platform supports them; otherwise deep-link into the app.
-  - The widget writes to shared storage (an iOS App Group, Android SharedPreferences) as `pending_actions`. The app imports and processes these (4.7).
+  - iOS: the widget's button handler appends the action to the widget's props stored in the App Group; the app imports them into `pending_actions`. Android: the widget task handler inserts into `pending_actions` directly. The app processes them (4.7).
   - The app pushes a fresh widget snapshot after every log change, on the day rollover (`dayEndsAt`), and after import.
 - **Settings → Widget:** choose the group, hide goal names, and show a preview.
 
@@ -286,15 +297,16 @@ Catch unhandled JS errors and failed operations. Append them to a rotating local
 - Every list has a designed empty state.
 - A 3-screen animated first-run onboarding requests notification permission on the last screen.
 - All user-facing strings live in one strings file, ready for translation.
+- No emojis anywhere in the app, widgets, notifications or exports; use icons only.
 
 ## 7. Phases
 Each phase is executed only when the user says "Run Phase N".
-0. **Design:** create `DESIGN.md` covering tokens, typography, motion tokens, and screen-by-screen layouts for Today, Stats, Create Goal, History, Review, Settings, Lock and Splash. Build a dev-only `/design-preview` route that renders the key screens with mock data. STOP for approval.
+0. **Design:** create the minimal Expo SDK 57 project (TypeScript strict, Expo Router, jest) needed to host `/design-preview`. Create `DESIGN.md` covering tokens, typography, motion tokens, and screen-by-screen layouts for Today, Stats, Create Goal, History, Review, Settings, Lock and Splash. Build a dev-only `/design-preview` route that renders the key screens with mock data. STOP for approval.
 1. **Scaffold:**
-   - Expo project, dev-build config, ThemeProvider and tokens.
-   - The `src/ui/motion` module, including the Moti and Reanimated 4 compatibility check.
+   - Dev-build config, ThemeProvider and tokens.
+   - The `src/ui/motion` module, including the Reanimated 4 check (`/motion-check`).
    - Native splash plus the animated splash, and tab navigation with animated transitions.
-2. **Data:** DB schema and migrations, repositories, and a dev seed script (3 years of logs, 12 goals, 3 groups, 2 vacations, schedule changes).
+2. **Data:** DB schema (including `goal_pauses`) and migrations, repositories, and a dev seed script (3 years of logs, 12 goals, 3 groups, 2 vacations, schedule changes).
 3. **Domain** (all of section 4 plus `reviewBuilder`, `reminderPlanner` and `backupPolicy`), with unit tests covering:
    - every schedule type and schedule versioning;
    - skipped, vacation and paused days;
@@ -331,6 +343,7 @@ Each phase is executed only when the user says "Run Phase N".
 - At the end of each phase, report: `✅ Phase N: <what was done> · Tests: <commands run + results> · Next: <what Phase N+1 will do>`. Then STOP.
 - Ground every progress claim in actual command output. Never claim a test passed without running it.
 - Run `npx tsc --noEmit` and `npx jest` before reporting any phase complete.
+- Automated checks (`npx tsc --noEmit`, `npx jest`, build/export checks) gate each phase. Device-only checks are recorded in `PROGRESS.md` as "device verification pending" and executed together in Phase 13; they are never reported as passed before then. Phase 10's STOP applies to the automated re-read checks.
 
 ## 9. Done when
 - All unit tests pass and TypeScript compiles with 0 errors.

@@ -1,7 +1,7 @@
 # Trek — Design (brainstorm outcome)
 
 - Date: 2026-10-05
-- Status: awaiting "design approved"
+- Status: approved 2026-10-05 (CLAUDE.md diffs D1–D15 applied)
 - Source of truth: `CLAUDE.md`. This document does NOT restate CLAUDE.md. It records only (1) resolutions of gaps, ambiguities and contradictions found in CLAUDE.md, (2) UX and motion detail for the key screens, (3) designs for the risky areas, and (4) the explicit CLAUDE.md diffs that will be applied after approval.
 - Anything not covered here follows CLAUDE.md as written.
 
