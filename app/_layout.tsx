@@ -14,14 +14,14 @@ import { ThemeProvider } from '../src/ui/ThemeProvider';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts(Ionicons.font);
+  const [fontsLoaded, fontError] = useFonts(Ionicons.font);
   const theme = useSettings((s) => s.settings.theme);
   const accent = useSettings((s) => s.settings.accentColor);
   const reduce = useReduceMotion();
   const [splashDone, setSplashDone] = useState(false);
 
   // Phase 2 adds migrations to this readiness check.
-  const ready = fontsLoaded;
+  const ready = fontsLoaded || fontError != null;
   useEffect(() => {
     if (ready) void SplashScreen.hideAsync();
   }, [ready]);

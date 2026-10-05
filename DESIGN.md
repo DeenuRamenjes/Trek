@@ -61,7 +61,7 @@ Status is always shown with an icon (Ionicons) plus color, and labelled in text 
 | done | `checkmark-circle` | #2E7D5B | #5CC49A |
 | partial | `contrast` (half fill) | #B26A00 | #F0A443 |
 | skipped | `remove-circle-outline` | #6B6F76 | #9EA2A9 |
-| vacation | `sunny` | #2F6FB0 | #7DB3F0 |
+| vacation | `airplane` | #2F6FB0 | #7DB3F0 |
 | missed | `close-circle-outline` | #C0392B | #F07A6E |
 | pending | `ellipse-outline` | #6B6F76 | #9EA2A9 |
 | notDue (not-due) | none (muted day number) | #6B6F76 | #9EA2A9 |

@@ -5,9 +5,10 @@ import { DesignPreviewIndex } from '../DesignPreviewIndex';
 import { DesignPreviewScreen } from '../DesignPreviewScreen';
 
 const mockPush = jest.fn();
+const mockBack = jest.fn();
 
 jest.mock('expo-router', () => ({
-  router: { push: (...args: unknown[]) => mockPush(...args) },
+  router: { push: (...args: unknown[]) => mockPush(...args), back: () => mockBack() },
   Redirect: ({ href }: { href: string }) => {
     const { Text: MockText } = jest.requireActual<typeof import('react-native')>('react-native');
     return <MockText>{`redirect:${href}`}</MockText>;
@@ -16,7 +17,10 @@ jest.mock('expo-router', () => ({
 
 const p = strings.designPreview;
 
-beforeEach(() => mockPush.mockClear());
+beforeEach(() => {
+  mockPush.mockClear();
+  mockBack.mockClear();
+});
 
 describe('DesignPreviewIndex', () => {
   it('lists all eight screens', async () => {
@@ -38,6 +42,12 @@ describe('DesignPreviewScreen', () => {
   it('renders the requested screen', async () => {
     await renderWithTheme(<DesignPreviewScreen screen="lock" mode="dark" />);
     expect(screen.getByText(strings.lock.title)).toBeTruthy();
+  });
+
+  it('goes back from the back button', async () => {
+    await renderWithTheme(<DesignPreviewScreen screen="lock" mode="light" />);
+    await fireEvent.press(screen.getByRole('button', { name: strings.navigation.back }));
+    expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
   it('redirects unknown keys to the list', async () => {

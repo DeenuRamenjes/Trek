@@ -1,4 +1,8 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
+import { View } from 'react-native';
+import { strings } from '../../strings/en';
+import { IconButton } from '../../ui/components';
+import { uiIcons } from '../../ui/icons';
 import { ThemeProvider } from '../../ui/ThemeProvider';
 import { isPreviewKey, previewScreens } from '../preview/registry';
 
@@ -12,7 +16,12 @@ export function DesignPreviewScreen({ screen, mode }: Props) {
   const Component = previewScreens[screen];
   return (
     <ThemeProvider mode={mode === 'dark' ? 'dark' : 'light'}>
-      <Component />
+      <View style={{ flex: 1 }}>
+        <View style={{ alignItems: 'flex-start', paddingHorizontal: 8 }}>
+          <IconButton icon={uiIcons.back} accessibilityLabel={strings.navigation.back} onPress={() => router.back()} />
+        </View>
+        <Component />
+      </View>
     </ThemeProvider>
   );
 }
