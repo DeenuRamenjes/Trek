@@ -300,8 +300,8 @@ Catch unhandled JS errors and failed operations. Append them to a rotating local
 - No emojis anywhere in the app, widgets, notifications or exports; use icons only.
 
 ## 7. Phases
-Each phase is executed only when the user says "Run Phase N".
-0. **Design:** create the minimal Expo SDK 57 project (TypeScript strict, Expo Router, jest) needed to host `/design-preview`. Create `DESIGN.md` covering tokens, typography, motion tokens, and screen-by-screen layouts for Today, Stats, Create Goal, History, Review, Settings, Lock and Splash. Build a dev-only `/design-preview` route that renders the key screens with mock data. STOP for approval.
+Phases run back to back without waiting for a "Run Phase N" request.
+0. **Design:** create the minimal Expo SDK 57 project (TypeScript strict, Expo Router, jest) needed to host `/design-preview`. Create `DESIGN.md` covering tokens, typography, motion tokens, and screen-by-screen layouts for Today, Stats, Create Goal, History, Review, Settings, Lock and Splash. Build a dev-only `/design-preview` route that renders the key screens with mock data. (Approved.)
 1. **Scaffold:**
    - Dev-build config, ThemeProvider and tokens.
    - The `src/ui/motion` module, including the Reanimated 4 check (`/motion-check`).
@@ -338,9 +338,9 @@ Each phase is executed only when the user says "Run Phase N".
     - a performance check with the 3-year seed: smooth lists, the Stats tab rendering in under 500 ms, and 60 fps animations on a mid-range Android device.
 
 ## 8. Working rules
-- Execute ONE phase per request. Do not start the next phase.
+- Run all phases continuously. After a phase is verified and reported, start the next phase immediately. Pause only for the "STOP and ask" items in section 1, the platform checks in Phases 10 and 12, or a blocker; ask in-session and continue.
 - Keep `PROGRESS.md` updated: phase status, decisions made, deviations from this spec (with the reason), and open questions.
-- At the end of each phase, report: `✅ Phase N: <what was done> · Tests: <commands run + results> · Next: <what Phase N+1 will do>`. Then STOP.
+- At the end of each phase, report: `✅ Phase N: <what was done> · Tests: <commands run + results> · Next: <what Phase N+1 will do>`. Then continue to the next phase.
 - Ground every progress claim in actual command output. Never claim a test passed without running it.
 - Run `npx tsc --noEmit` and `npx jest` before reporting any phase complete.
 - Automated checks (`npx tsc --noEmit`, `npx jest`, build/export checks) gate each phase. Device-only checks are recorded in `PROGRESS.md` as "device verification pending" and executed together in Phase 13; they are never reported as passed before then. Phase 10's STOP applies to the automated re-read checks.
