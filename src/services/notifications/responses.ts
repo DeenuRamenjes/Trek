@@ -8,6 +8,20 @@ import type { NotificationResponse } from './adapter';
 export const MARK_DONE_ACTION = 'mark-done';
 export const SNOOZE_ACTION = 'snooze';
 
+export const DEFAULT_ACTION = 'expo.modules.notifications.actions.DEFAULT';
+
+/**
+ * Expo Router path for a plain tap on a notification with a `trek://` url, else null.
+ * trek://review/week-2026-10-11 -> /review/week-2026-10-11; trek://today -> /today.
+ */
+export function routeFromResponse(response: NotificationResponse): string | null {
+  if (response.actionIdentifier !== DEFAULT_ACTION) return null;
+  const url = (response.notification.request.content.data as { url?: unknown } | null | undefined)?.url;
+  if (typeof url !== 'string' || !url.startsWith('trek://')) return null;
+  const path = url.slice('trek://'.length).replace(/^\/+/, '');
+  return path ? `/${path}` : null;
+}
+
 const ACTIONS = { [MARK_DONE_ACTION]: 'done', [SNOOZE_ACTION]: 'snooze' } as const;
 
 /**

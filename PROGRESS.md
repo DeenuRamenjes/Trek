@@ -194,7 +194,7 @@ These review notes were deferred to the phase that builds on the affected code. 
 
 ## Phase 8 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no errors.
-- `npx jest`: Test Suites: 65 passed, 65 total; Tests: 611 passed, 611 total.
+- `npx jest`: Test Suites: 69 passed, 69 total; Tests: 622 passed, 622 total (after final-review fixes).
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported: dist.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported: dist.
 
@@ -205,6 +205,9 @@ These review notes were deferred to the phase that builds on the affected code. 
 - Exact-alarm fallback = expo's inexact default; no native code.
 - Lifecycle logic is pure (`lifecycle.ts`, injected deps); `useNotificationsLifecycle` is a thin hook (foreground, db changes, relevant settings changes, time zone).
 - `refreshWidgets()` in `src/services/widgetBridge.ts` is a no-op hook point for Phase 12.
+- Final-review fixes: reminders carry slotId and (one-shot only) logical date into notification data; processing is serialized and re-checks processedAt inside the transaction; default taps route via `trek://` url; reconcile is serialized and coalesced; applied actions trigger reconcile and `refreshWidgets()`.
+- Snooze scheduling is not transactional (schedule, then markProcessed). A crash in between leaves the row pending; the rerun reschedules the same `s:<id>`, so it is idempotent by id.
+- The 64 cap is enforced at reconcile time; snoozes created between reconciles are covered because applying an action triggers a reconcile.
 - Background task `trek-background-maintenance`, 15 min minimum, runs processor then reconciler.
 
 ## Phase 8 device verification pending (run in Phase 13)
@@ -212,6 +215,7 @@ These review notes were deferred to the phase that builds on the affected code. 
 - Vacation suppresses reminders.
 - "Mark done" from a killed app is saved exactly once.
 - Background task runs and reconciles.
+- Killed-app notification response payload (response task) on iOS and Android.
 - Exact alarm fallback to inexact on Android.
 
 ## Device verification pending (run in Phase 13)

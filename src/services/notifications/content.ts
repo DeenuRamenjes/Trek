@@ -44,5 +44,7 @@ export function renderContent(p: PlannedReminder, opts: { appLockEnabled: boolea
   const url = notificationUrl(urlData);
   const data: Record<string, unknown> = { url };
   if (p.goalId) data.goalId = p.goalId;
+  if (p.slotId) data.slotId = p.slotId;
+  if (p.date) data.date = p.date;
   return { title, body, url, data };
 }

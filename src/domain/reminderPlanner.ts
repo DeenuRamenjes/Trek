@@ -37,6 +37,10 @@ export type PlannedReminder = PlannedTrigger & {
   goalId?: string;
   /** Goal name (never notes); only for goal reminders. */
   goalName?: string;
+  /** Slot the reminder belongs to (goal reminders with a slot). */
+  slotId?: string;
+  /** Logical date of the occurrence; one-shot reminders only (weekly triggers repeat, so it is omitted). */
+  date?: string;
   /** Deep link target for review notifications. */
   route?: 'review/week' | 'review/month';
   /** 0 goal, 1 review, 2 backup. */
@@ -113,6 +117,7 @@ function goalReminders(input: PlannerInput): PlannedReminder[] {
       contentKey: 'goalReminder' as const,
       goalId: ctx.goal.id,
       goalName: ctx.goal.name,
+      ...(r.slotId ? { slotId: r.slotId } : {}),
       priority: 0,
     };
     if (ok.every(Boolean)) {
@@ -131,7 +136,14 @@ function goalReminders(input: PlannerInput): PlannedReminder[] {
     occurrences.forEach((fire, i) => {
       if (!ok[i]) return;
       const at = fire.toISOString();
-      out.push({ ...common, id: `goal:${r.id}:${at}`, kind: 'date', at, nextAt: at });
+      out.push({
+        ...common,
+        id: `goal:${r.id}:${at}`,
+        kind: 'date',
+        at,
+        nextAt: at,
+        date: logicalDate(fire, settings.dayEndsAt),
+      });
     });
   }
   return out;

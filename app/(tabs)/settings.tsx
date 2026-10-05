@@ -1,8 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking } from 'react-native';
-import { notificationsAdapter } from '../../src/services/notifications/adapter';
-import { permissionRow, type PermissionState } from '../../src/services/notifications/permissions';
+import { NotificationsRow } from '../../src/features/settings/NotificationsRow';
 import { getDb } from '../../src/db/client';
 import { seedDemoData } from '../../src/db/seed';
 import { AppText, Button, Card, Screen } from '../../src/ui/components';
@@ -12,36 +9,6 @@ function localToday(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
-
-function NotificationsRow() {
-  const [state, setState] = useState<PermissionState | null>(null);
-  const refresh = useCallback(() => {
-    notificationsAdapter.getPermissions().then(setState, () => undefined);
-  }, []);
-  useEffect(() => {
-    refresh();
-    const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') refresh();
-    });
-    return () => sub.remove();
-  }, [refresh]);
-  if (!state) return null;
-  const row = permissionRow(state);
-  const t = strings.settings.notifications;
-  const onPress = () => {
-    if (row.action === 'openSettings') void Linking.openSettings();
-    else notificationsAdapter.requestPermissions().then(setState, () => undefined);
-  };
-  return (
-    <Card>
-      <AppText variant="headline">{t.title}</AppText>
-      <AppText tone="secondary">{row.text}</AppText>
-      {row.action !== 'none' && row.actionLabel ? (
-        <Button variant="secondary" label={row.actionLabel} accessibilityLabel={row.actionLabel} onPress={onPress} />
-      ) : null}
-    </Card>
-  );
 }
 
 export default function SettingsScreen() {

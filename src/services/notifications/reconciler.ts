@@ -43,7 +43,7 @@ function buildRequest(p: PlannedReminder, appLockEnabled: boolean) {
       ? weeklyTrigger(toExpoWeekday(p.weekday), p.hour, p.minute, channelId)
       : dateTrigger(new Date(p.at), channelId);
   const signature = p.kind === 'weekly' ? `w${p.weekday}-${p.hour}-${p.minute}` : `d${p.at}`;
-  const contentKey = JSON.stringify([content.title, content.body, content.url, signature, content.data.goalId ?? null]);
+  const contentKey = JSON.stringify([content.title, content.body, content.url, signature, content.data.goalId ?? null, content.data.slotId ?? null, content.data.date ?? null]);
   return {
     identifier: p.id,
     content: {

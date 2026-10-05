@@ -14,6 +14,12 @@ const plan = (o: Partial<PlannerInput> = {}) =>
   planReminders({ now, ctxs: [mkCtx()], reminders: [rem()], logs: [], settings, ...o });
 
 describe('goal reminders', () => {
+  it('carries slotId, and the logical date on one-shot occurrences', () => {
+    const ctx = mkCtx({ vacations: [mkVacation({ startDate: '2026-10-07', endDate: '2026-10-07' })] });
+    const out = plan({ ctxs: [ctx], reminders: [rem({ slotId: 's1' })] });
+    expect(out[0]).toMatchObject({ kind: 'date', slotId: 's1', date: '2026-10-14' });
+    expect(plan({ reminders: [rem({ slotId: 's1' })] })[0]).toMatchObject({ kind: 'weekly', slotId: 's1' });
+  });
   it('all-due weekly reminder becomes one repeating weekly trigger', () => {
     const out = plan();
     expect(out).toHaveLength(1);

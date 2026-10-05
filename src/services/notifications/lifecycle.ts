@@ -8,6 +8,32 @@ export type LifecycleDeps = {
   debounceMs?: number;
 };
 
+/**
+ * Wraps an async job so calls never overlap: a call during a run schedules exactly one rerun and
+ * every caller's promise resolves when the run that covers it finishes.
+ */
+export function coalesce(job: () => Promise<unknown>): () => Promise<void> {
+  let running: Promise<void> | null = null;
+  let rerun = false;
+  return function call(): Promise<void> {
+    if (running) {
+      rerun = true;
+      return running;
+    }
+    running = (async () => {
+      try {
+        do {
+          rerun = false;
+          await job();
+        } while (rerun);
+      } finally {
+        running = null;
+      }
+    })();
+    return running;
+  };
+}
+
 /** Orchestration with injected deps so it is testable without React or Expo. */
 export function createLifecycle(deps: LifecycleDeps) {
   let timer: ReturnType<typeof setTimeout> | null = null;
