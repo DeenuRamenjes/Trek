@@ -1,12 +1,12 @@
 import { ReactNode } from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { useTheme } from '../ThemeProvider';
 import { radii, spacing } from '../tokens';
 
 type Props = {
   children: ReactNode;
   muted?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function Card({ children, muted = false, style }: Props) {

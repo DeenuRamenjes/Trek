@@ -1,9 +1,11 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
+import * as ReactNative from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { strings } from '../../../strings/en';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { expectAllButtonsLabelled } from '../../../test/a11y';
-import { useTheme } from '../../ThemeProvider';
+import { ThemeProvider, useTheme } from '../../ThemeProvider';
 import { buildColors, minTapTarget, StatusKey } from '../../tokens';
 import { AppText, Banner, Button, Card, GoalIcon, IconButton, Screen, SegmentedControl, StatusGlyph, statusLabel } from '..';
 
@@ -16,6 +18,33 @@ describe('ThemeProvider', () => {
   it('provides light and dark tokens', async () => {
     await renderWithTheme(<ModeProbe />, 'dark');
     expect(screen.getByText(`dark ${buildColors('dark').background}`)).toBeTruthy();
+  });
+
+  it('follows the system color scheme when no mode is forced', async () => {
+    const spy = jest.spyOn(ReactNative, 'useColorScheme').mockReturnValue('dark');
+    try {
+      await render(
+        <ThemeProvider>
+          <ModeProbe />
+        </ThemeProvider>,
+      );
+      expect(screen.getByText(`dark ${buildColors('dark').background}`)).toBeTruthy();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('builds the accent from the accent prop', async () => {
+    function AccentProbe() {
+      const { colors } = useTheme();
+      return <Text>{colors.accent}</Text>;
+    }
+    await render(
+      <ThemeProvider mode="light" accent="#4F5BD5">
+        <AccentProbe />
+      </ThemeProvider>,
+    );
+    expect(screen.getByText(buildColors('light', '#4F5BD5').accent)).toBeTruthy();
   });
 
   it('throws when useTheme is used outside the provider', async () => {
@@ -95,6 +124,24 @@ describe('components', () => {
       expect(statusLabel(status)).toBe(strings.status[status]);
     }
     expect(statusLabel('missed')).toBe('Missed');
+  });
+
+  it('Screen pads only the requested safe-area edges', async () => {
+    await render(
+      <SafeAreaProvider
+        initialMetrics={{ frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } }}
+      >
+        <ThemeProvider mode="light">
+          <Screen edges={['top']}>
+            <Text>Edges</Text>
+          </Screen>
+        </ThemeProvider>
+      </SafeAreaProvider>,
+    );
+    const padded = screen.getByText('Edges');
+    let node: typeof padded | null = padded;
+    while (node && node.props.edges === undefined) node = node.parent;
+    expect(node?.props.edges).toEqual({ top: 'additive', right: 'off', bottom: 'off', left: 'off' });
   });
 
   it('renders Screen, Card and GoalIcon in both modes', async () => {

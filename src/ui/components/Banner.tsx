@@ -27,7 +27,7 @@ export function Banner({ icon, message, actions }: Props) {
       <View style={styles.actions}>
         {actions.map((action, index) => (
           <Button
-            key={action.label}
+            key={index}
             label={action.label}
             onPress={action.onPress}
             variant={index === 0 ? 'primary' : 'plain'}

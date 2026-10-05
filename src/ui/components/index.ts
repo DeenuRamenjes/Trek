@@ -1,5 +1,7 @@
 export { AppText } from './AppText';
+export type { TextTone } from './AppText';
 export { Banner } from './Banner';
+export type { BannerAction } from './Banner';
 export { Button } from './Button';
 export { Card } from './Card';
 export { GoalIcon } from './GoalIcon';
@@ -7,4 +9,5 @@ export { Icon } from './Icon';
 export { IconButton } from './IconButton';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
+export type { Segment } from './SegmentedControl';
 export { StatusGlyph, statusLabel } from './StatusGlyph';

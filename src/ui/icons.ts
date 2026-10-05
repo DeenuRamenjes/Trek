@@ -35,7 +35,7 @@ export const statusIcons: Record<StatusKey, IconName | null> = {
   done: 'checkmark-circle',
   partial: 'contrast',
   skipped: 'remove-circle-outline',
-  vacation: 'sunny',
+  vacation: 'airplane',
   missed: 'close-circle-outline',
   pending: 'ellipse-outline',
   notDue: null,

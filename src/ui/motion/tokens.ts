@@ -29,7 +29,8 @@ export const stagger = {
 
 /** Delay for the item at `index` in a staggered list. */
 export function staggerDelay(index: number): number {
-  return Math.min(Math.max(index, 0), stagger.maxItems - 1) * stagger.stepMs;
+  if (!Number.isFinite(index)) return 0;
+  return Math.min(Math.max(Math.floor(index), 0), stagger.maxItems - 1) * stagger.stepMs;
 }
 
 export const splashTiming = {
@@ -38,4 +39,5 @@ export const splashTiming = {
   wordmarkDelayMs: 300,
   wordmarkMs: 250,
   crossFadeStartMs: 950,
+  crossFadeMs: 250,
 } as const;

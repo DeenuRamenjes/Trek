@@ -115,7 +115,7 @@ export function buildColors(mode: ColorMode, accentHex: string = DEFAULT_ACCENT)
     accent,
     onAccent: readableOn(accent),
     accentMuted: mode === 'light' ? tones[95] : tones[20],
-    status: statusColors[mode],
+    status: { ...statusColors[mode] },
     overlay: mode === 'light' ? 'rgba(17, 18, 20, 0.4)' : 'rgba(0, 0, 0, 0.6)',
   };
 }

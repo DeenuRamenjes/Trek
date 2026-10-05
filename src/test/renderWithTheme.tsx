@@ -9,10 +9,15 @@ const metrics = {
   insets: { top: 47, left: 0, right: 0, bottom: 34 },
 };
 
-export function renderWithTheme(ui: ReactElement, mode: ColorMode = 'light') {
-  return render(
+/** Wraps `ui` in the providers every screen needs; use it again for `rerender`. */
+export function withTheme(ui: ReactElement, mode: ColorMode = 'light') {
+  return (
     <SafeAreaProvider initialMetrics={metrics}>
       <ThemeProvider mode={mode}>{ui}</ThemeProvider>
-    </SafeAreaProvider>,
+    </SafeAreaProvider>
   );
+}
+
+export function renderWithTheme(ui: ReactElement, mode: ColorMode = 'light') {
+  return render(withTheme(ui, mode));
 }

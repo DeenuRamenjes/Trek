@@ -70,6 +70,12 @@ describe('accent', () => {
     expect(DEFAULT_ACCENT).toBe('#2E7D5B');
   });
 
+  it('returns a fresh status object on every call', () => {
+    const first = buildColors('light');
+    first.status.done = '#000000';
+    expect(buildColors('light').status.done).toBe('#2E7D5B');
+  });
+
   it('derives a different accent per mode from one hex', () => {
     expect(buildColors('light', '#4F5BD5').accent).not.toBe(buildColors('dark', '#4F5BD5').accent);
   });
