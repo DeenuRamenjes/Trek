@@ -12,5 +12,16 @@ jest.mock('@shopify/react-native-skia', () => {
     React.createElement(View, { style, testID, accessible, accessibilityLabel }, children);
   const Group = ({ children }) => React.createElement(React.Fragment, null, children);
   const Nothing = () => null;
-  return { Canvas, Group, Path: Nothing };
+  const Path = Nothing;
+  const Path2 = { Make: () => ({ addArc: () => undefined }) };
+  return { Canvas, Group, Path, Rect: Nothing, Line: Nothing, Skia: { Path: Path2 } };
+});
+
+// victory-native needs Skia + a measured canvas; charts render as plain Views and are checked on device.
+jest.mock('victory-native', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  const Nothing = () => null;
+  const CartesianChart = ({ testID }) => React.createElement(View, { testID });
+  return { CartesianChart, Bar: Nothing, Line: Nothing };
 });

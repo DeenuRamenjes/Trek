@@ -100,6 +100,15 @@ export const strings = {
       `${done} done, ${partial} partial, ${skipped} skipped, ${vacation} vacation, ${missed} missed`,
     bestWeekdayNone: 'Not enough data yet',
     reviewsTitle: 'Reviews',
+    noChartData: 'Not enough data yet',
+    legendNone: 'Not scored',
+    legendDone: 'Scored (darker is more)',
+    legendMissed: 'Missed (crossed)',
+    heatmapSummary: (days: number, scored: number, full: number, missed: number) =>
+      `${days} days shown, ${scored} scored, ${full} fully complete, ${missed} missed`,
+    weeklySummary: (weeks: number, last: number, avg: number) => `${weeks} weeks, latest ${last} percent, average ${avg} percent`,
+    trendSummary: (first: number, last: number) => `Seven day average from ${first} percent to ${last} percent`,
+    perGoalItem: (name: string, percent: number) => `${name} ${percent} percent`,
   },
   goals: {
     title: 'Goals',

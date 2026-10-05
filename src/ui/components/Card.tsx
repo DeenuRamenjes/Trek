@@ -7,12 +7,22 @@ type Props = {
   children: ReactNode;
   muted?: boolean;
   style?: StyleProp<ViewStyle>;
+  accessible?: boolean;
+  accessibilityLabel?: string;
+  testID?: string;
 };
 
-export function Card({ children, muted = false, style }: Props) {
+export function Card({ children, muted = false, style, accessible, accessibilityLabel, testID }: Props) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.card, { backgroundColor: muted ? colors.surfaceMuted : colors.surface }, style]}>{children}</View>
+    <View
+      accessible={accessible}
+      accessibilityLabel={accessibilityLabel}
+      testID={testID}
+      style={[styles.card, { backgroundColor: muted ? colors.surfaceMuted : colors.surface }, style]}
+    >
+      {children}
+    </View>
   );
 }
 

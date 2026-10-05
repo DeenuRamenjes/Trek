@@ -18,6 +18,7 @@ import { spacing } from '../../ui/tokens';
 import { loadGoalContexts } from '../goals/goalContexts';
 import { useSettings } from '../settings/settingsStore';
 import { useLogicalToday } from '../tracking/useLogicalToday';
+import { BestWeekday, CompletionRing, Heatmap, PerGoalBars, StreakCard, TrendLine, WeeklyBars } from './charts';
 import { ALL_GOALS, GroupDropdown } from './GroupDropdown';
 import { RangeControl } from './RangeControl';
 import { buildStatsModel, type StatsModel } from './statsModel';
@@ -26,29 +27,16 @@ const t = strings.stats;
 
 type Loaded = { contexts: GoalContext[]; groups: Group[]; links: Record<string, string[]> };
 
-/**
- * TASK 3 SLOT: replace this placeholder with the chart cards (ring, streaks, heatmap, weekly bars,
- * trend, per-goal, best weekday). It receives the finished model; keep the Stagger wrapper.
- */
 function StatsCards({ model }: { model: StatsModel }) {
-  const c = model.completion;
   return (
     <Stagger>
-      <Card>
-        <AppText variant="headline">{t.completion}</AppText>
-        <AppText accessibilityLabel={t.completionSummary(Math.round(c.percent))}>{t.completionSummary(Math.round(c.percent))}</AppText>
-        <AppText tone="secondary">{t.countsSummary(c.done, c.partial, c.skipped, c.vacation, c.missed)}</AppText>
-      </Card>
-      <Card>
-        <AppText>{`${t.currentStreak}: ${t.days(model.currentStreak)}`}</AppText>
-        <AppText>{`${t.bestStreak}: ${t.days(model.bestStreak)}`}</AppText>
-      </Card>
-      <Card>
-        <AppText variant="headline">{t.bestWeekday}</AppText>
-        <AppText tone="secondary">
-          {model.bestWeekday === null ? t.bestWeekdayNone : strings.insights.weekdays[model.bestWeekday]}
-        </AppText>
-      </Card>
+      <CompletionRing model={model} />
+      <StreakCard model={model} />
+      <Heatmap model={model} />
+      <WeeklyBars model={model} />
+      <TrendLine model={model} />
+      <PerGoalBars model={model} />
+      <BestWeekday model={model} />
     </Stagger>
   );
 }

@@ -76,7 +76,7 @@ describe('StatsScreen', () => {
 
   it('range change updates the completion text', async () => {
     await setup();
-    const text = async () => (await screen.findByLabelText(/^Completion \d+ percent$/)).props.accessibilityLabel as string;
+    const text = async () => (await screen.findByLabelText(/^Completion \d+ percent/)).props.accessibilityLabel as string;
     await fireEvent.press(await screen.findByLabelText(t.ranges.d7));
     const short = await waitFor(text);
     await fireEvent.press(screen.getByLabelText(t.ranges.d30));

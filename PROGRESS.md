@@ -78,6 +78,24 @@
 - Log sheet: Save is disabled with a hint when a note has no progress (value 0); a value of 0 without a note clears the entry. Phase 6 history sheet must allow a note with value 0 or skipped status.
 - Today loads goal contexts with `loadGoalContexts` and reloads on every `dbChanged`.
 
+## Phase 5 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: 0 errors.
+- `npx jest`: 55 suites, 527 tests pass.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported.
+
+## Phase 5 decisions
+- currentStreak = max over the selected goals (same for bestStreak).
+- Group membership comes from `group_goals`; "All goals" uses every goal context.
+- Ring: Skia arc with gentle spring and AnimatedNumber. Heatmap: one Skia canvas; ratio 0 drawn crossed (not color alone), null drawn muted; legend shown. The model has no vacation flag per day, so vacation days appear as not scored.
+- Weekly bars and trend use victory-native (no axes, so no font file needed). Per-goal bars are plain Views with the goal name as Text. Charts have no own draw-in animation; the cards stagger in.
+- Jest mocks victory-native and extends the Skia mock in `jest.setup.app.js`.
+- Card accepts accessible, accessibilityLabel and testID.
+
+## Phase 5 device verification pending (run in Phase 13)
+- Chart animation smoothness.
+- Stats render under 500 ms: jest shows about 3 s for the 3-year All range; Phase 13 optimization required.
+
 ## Phase 4 device verification pending (run in Phase 13)
 - Swipe gestures feel (right = done, left = skipped) and long-press.
 - Goals drag reorder.
