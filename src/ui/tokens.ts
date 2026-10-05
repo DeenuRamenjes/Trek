@@ -125,3 +125,10 @@ export function goalColorFor(mode: ColorMode, storedHex: string): string {
   const index = goalPalette.light.indexOf(storedHex.toUpperCase());
   return index === -1 ? storedHex : goalPalette[mode][index];
 }
+
+/** Chart sizing shared by the Stats cards. */
+export const chartSizes = {
+  legendSwatch: 12,
+  legendSwatchRadius: 2,
+  goalNameWidth: 88,
+} as const;

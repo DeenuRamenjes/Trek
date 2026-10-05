@@ -2,7 +2,8 @@ import { StyleSheet, View } from 'react-native';
 import { strings } from '../../../strings/en';
 import { AppText, Card } from '../../../ui/components';
 import { useTheme } from '../../../ui/ThemeProvider';
-import { goalColorFor, radii, spacing } from '../../../ui/tokens';
+import { chartSizes, goalColorFor, radii, spacing } from '../../../ui/tokens';
+import { GrowIn } from './GrowIn';
 import type { StatsModel } from '../statsModel';
 
 const t = strings.stats;
@@ -27,7 +28,11 @@ export function PerGoalBars({ model }: { model: StatsModel }) {
                 {g.name}
               </AppText>
               <View style={[styles.track, { backgroundColor: colors.surfaceMuted }]}>
-                <View style={[styles.fill, { width: `${Math.min(100, Math.max(0, g.percent))}%`, backgroundColor: goalColorFor(mode, g.color) }]} />
+                <View style={{ width: `${Math.min(100, Math.max(0, g.percent))}%`, height: '100%' }}>
+                  <GrowIn axis="x" version={String(g.percent)}>
+                    <View style={[styles.fill, { backgroundColor: goalColorFor(mode, g.color) }]} />
+                  </GrowIn>
+                </View>
               </View>
               <AppText variant="caption" tone="secondary">{`${Math.round(g.percent)}%`}</AppText>
             </View>
@@ -41,7 +46,7 @@ export function PerGoalBars({ model }: { model: StatsModel }) {
 const styles = StyleSheet.create({
   list: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  name: { width: 84 },
+  name: { width: chartSizes.goalNameWidth },
   track: { flex: 1, height: 8, borderRadius: radii.pill, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: radii.pill },
 });

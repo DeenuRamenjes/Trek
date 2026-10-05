@@ -4,8 +4,9 @@ import { StyleSheet, View } from 'react-native';
 import { parseDate } from '../../../domain/dates';
 import { strings } from '../../../strings/en';
 import { AppText, Card } from '../../../ui/components';
+import { useSettings } from '../../settings/settingsStore';
 import { useTheme } from '../../../ui/ThemeProvider';
-import { spacing } from '../../../ui/tokens';
+import { chartSizes, spacing } from '../../../ui/tokens';
 import type { StatsModel } from '../statsModel';
 
 const t = strings.stats;
@@ -25,9 +26,10 @@ export function heatmapSummary(heatmap: StatsModel['heatmap']): string {
 
 export function Heatmap({ model }: { model: StatsModel }) {
   const { colors } = useTheme();
+  const weekStart = useSettings((s) => s.settings.weekStart);
   const [width, setWidth] = useState(0);
   const cells = model.heatmap;
-  const lead = cells.length ? (parseDate(cells[0].date).getDay() + 6) % ROWS : 0;
+  const lead = cells.length ? (parseDate(cells[0].date).getDay() - weekStart + ROWS) % ROWS : 0;
   const cols = Math.ceil((cells.length + lead) / ROWS);
   const size = Math.max(3, Math.min(MAX_CELL, cols > 0 && width > 0 ? Math.floor((width - GAP * (cols - 1)) / cols) : MAX_CELL));
   const height = ROWS * size + (ROWS - 1) * GAP;
@@ -84,6 +86,6 @@ function LegendSwatch({ color, border, label, crossed }: { color: string; border
 const styles = StyleSheet.create({
   legend: { flexDirection: 'row', gap: spacing.md, flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  swatch: { width: 12, height: 12, borderRadius: 2, borderWidth: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  swatch: { width: chartSizes.legendSwatch, height: chartSizes.legendSwatch, borderRadius: chartSizes.legendSwatchRadius, borderWidth: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   cross: { width: 16, height: 1, transform: [{ rotate: '45deg' }] },
 });

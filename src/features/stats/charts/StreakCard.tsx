@@ -8,17 +8,20 @@ import type { StatsModel } from '../statsModel';
 const t = strings.stats;
 
 export function StreakCard({ model }: { model: StatsModel }) {
-  const label = `${t.currentStreak}: ${t.days(model.currentStreak)}. ${t.bestStreak}: ${t.days(model.bestStreak)}`;
+  const unit = (n: number, u: 'days' | 'weeks') => (u === 'weeks' ? t.weeks(n) : t.days(n));
+  const label = `${t.currentStreak}: ${unit(model.currentStreak, model.currentStreakUnit)}. ${t.bestStreak}: ${unit(model.bestStreak, model.bestStreakUnit)}`;
   return (
     <Card accessible accessibilityLabel={label} testID="stats-streaks">
       <View style={styles.row}>
         <View style={styles.cell}>
           <AppText tone="secondary">{t.currentStreak}</AppText>
           <AnimatedNumber value={model.currentStreak} variant="display" accessibilityLabel={String(model.currentStreak)} />
+          <AppText variant="caption" tone="secondary">{model.currentStreakUnit === 'weeks' ? t.unitWeeks : t.unitDays}</AppText>
         </View>
         <View style={styles.cell}>
           <AppText tone="secondary">{t.bestStreak}</AppText>
           <AnimatedNumber value={model.bestStreak} variant="display" accessibilityLabel={String(model.bestStreak)} />
+          <AppText variant="caption" tone="secondary">{model.bestStreakUnit === 'weeks' ? t.unitWeeks : t.unitDays}</AppText>
         </View>
       </View>
     </Card>

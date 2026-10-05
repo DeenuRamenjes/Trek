@@ -80,13 +80,14 @@
 
 ## Phase 5 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: 0 errors.
-- `npx jest`: 55 suites, 527 tests pass.
+- `npx jest`: 55 suites, 528 tests pass (after Polish stats charts).
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported.
 
 ## Phase 5 decisions
 - currentStreak = max over the selected goals (same for bestStreak).
 - Group membership comes from `group_goals`; "All goals" uses every goal context.
+- Polish: weekly bars, trend and per-goal bars grow in via transform (GrowIn, instant under reduce motion); heatmap offset follows weekStart; trend gaps are null; streak unit comes from the goal holding the max (weeks for timesPerWeek); dropdown has an exit animation; chart sizes are tokens. Android export OK.
 - Ring: Skia arc with gentle spring and AnimatedNumber. Heatmap: one Skia canvas; ratio 0 drawn crossed (not color alone), null drawn muted; legend shown. The model has no vacation flag per day, so vacation days appear as not scored.
 - Weekly bars and trend use victory-native (no axes, so no font file needed). Per-goal bars are plain Views with the goal name as Text. Charts have no own draw-in animation; the cards stagger in.
 - Jest mocks victory-native and extends the Skia mock in `jest.setup.app.js`.

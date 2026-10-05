@@ -16,7 +16,7 @@ type Props = {
   onChange: (value: string) => void;
 };
 
-/** Group picker for the Stats tab. The menu fades and scales in over 150 ms. */
+/** Group picker for the Stats tab. The menu fades and scales in and out over 150 ms. */
 export function GroupDropdown({ groups, selected, onChange }: Props) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
@@ -36,6 +36,7 @@ export function GroupDropdown({ groups, selected, onChange }: Props) {
         <Motion
           from={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.96 }}
           transition={{ duration: 'fast', easing: 'enter' }}
         >
           <Card>

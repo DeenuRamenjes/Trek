@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { strings } from '../../../strings/en';
 import { AppText, Card } from '../../../ui/components';
 import { useTheme } from '../../../ui/ThemeProvider';
+import { GrowIn } from './GrowIn';
 import type { StatsModel } from '../statsModel';
 
 const t = strings.stats;
@@ -24,11 +25,13 @@ export function WeeklyBars({ model }: { model: StatsModel }) {
         <AppText tone="secondary">{t.noChartData}</AppText>
       ) : (
         <View style={styles.chart} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+          <GrowIn axis="y" version={JSON.stringify(data)}>
           <CartesianChart data={data} xKey="x" yKeys={['y']} domain={{ y: [0, 100] }} domainPadding={{ left: 8, right: 8 }}>
             {({ points, chartBounds }) => (
               <Bar points={points.y} chartBounds={chartBounds} color={colors.accent} roundedCorners={{ topLeft: 3, topRight: 3 }} />
             )}
           </CartesianChart>
+          </GrowIn>
         </View>
       )}
     </Card>

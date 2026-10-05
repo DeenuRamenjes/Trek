@@ -9,6 +9,7 @@ import {
   type StatsMode,
   type StatsRange,
 } from '../../domain/statsCalculator';
+import { effectiveVersion } from '../../domain/scheduleEngine';
 import { bestStreak, currentStreak } from '../../domain/streaks';
 import type { GoalContext, Log } from '../../domain/types';
 
@@ -19,15 +20,21 @@ export type StatsModel = {
   currentStreak: number;
   /** Highest best streak over the selected goals. */
   bestStreak: number;
+  /** Unit of the goal holding the max: weeks for timesPerWeek goals, otherwise days. */
+  currentStreakUnit: StreakUnit;
+  bestStreakUnit: StreakUnit;
   /** One cell per date in range; ratio is 0-1, or null when nothing was scored that day. */
   heatmap: { date: string; ratio: number | null }[];
   weekly: { weekStart: string; percent: number }[];
   /** 7-day rolling completion percent, one point per date in range. */
-  trend: { date: string; percent: number }[];
+  /** percent is null when the 7-day window had nothing scored. */
+  trend: { date: string; percent: number | null }[];
   perGoal: { goalId: string; name: string; color: string; percent: number }[];
   /** ISO weekday 0 = Monday; null without data. */
   bestWeekday: number | null;
 };
+
+export type StreakUnit = 'days' | 'weeks';
 
 export type StatsInput = {
   contexts: GoalContext[];
@@ -39,6 +46,19 @@ export type StatsInput = {
   today: string;
   weekStart: number;
 };
+
+function maxStreak(ctxs: GoalContext[], streak: (c: GoalContext) => number, today: string): { value: number; unit: StreakUnit } {
+  let value = 0;
+  let unit: StreakUnit = 'days';
+  for (const c of ctxs) {
+    const n = streak(c);
+    if (n > value) {
+      value = n;
+      unit = effectiveVersion(c.versions, today)?.scheduleType === 'timesPerWeek' ? 'weeks' : 'days';
+    }
+  }
+  return { value, unit };
+}
 
 export function buildStatsModel(input: StatsInput): StatsModel {
   const { logs, range, mode, today, weekStart } = input;
@@ -59,16 +79,20 @@ export function buildStatsModel(input: StatsInput): StatsModel {
       credit += p.credit;
       denominator += p.denominator;
     }
-    return { date: lead[i + 6].date, percent: denominator > 0 ? (credit / denominator) * 100 : 0 };
+    return { date: lead[i + 6].date, percent: denominator > 0 ? (credit / denominator) * 100 : null };
   });
 
+  const cur = maxStreak(ctxs, (x) => currentStreak(x, logs, today, weekStart), today);
+  const best = maxStreak(ctxs, (x) => bestStreak(x, logs, today, weekStart), today);
   const byGoal = perGoal(ctxs, logs, from, to, today, mode, weekStart);
 
   return {
     range: { from, to },
     completion: { percent: c.percent, done: c.done, partial: c.partial, skipped: c.skipped, vacation: c.vacation, missed: c.missed },
-    currentStreak: ctxs.reduce((m, x) => Math.max(m, currentStreak(x, logs, today, weekStart)), 0),
-    bestStreak: ctxs.reduce((m, x) => Math.max(m, bestStreak(x, logs, today, weekStart)), 0),
+    currentStreak: cur.value,
+    bestStreak: best.value,
+    currentStreakUnit: cur.unit,
+    bestStreakUnit: best.unit,
     heatmap: heat.map((p) => ({ date: p.date, ratio: p.denominator > 0 ? p.credit / p.denominator : null })),
     weekly: weeklyBars(ctxs, logs, from, to, today, mode, weekStart).map((b) => ({ weekStart: b.weekStart, percent: b.percent })),
     trend,

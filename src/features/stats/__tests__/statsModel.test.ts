@@ -46,6 +46,17 @@ describe('buildStatsModel fixtures', () => {
     expect(m.perGoal).toEqual([]);
     expect(m.bestWeekday).toBeNull();
     expect(m.currentStreak).toBe(0);
+    expect(m.currentStreakUnit).toBe('days');
+    expect(m.trend.every((p) => p.percent === null)).toBe(true);
+  });
+
+  it('weekly goal holding the max streak is labeled weeks', () => {
+    const w = mkCtx({
+      goal: mkGoal({ id: 'w', name: 'W' }),
+      versions: [mkVersion({ id: 'vw', goalId: 'w', scheduleType: 'timesPerWeek', timesPerWeek: 1, scheduleDays: 127 })],
+    });
+    const m = buildStatsModel({ ...input, contexts: [w], goalIds: null, today: '2026-01-20', logs: [mkLog({ date: '2026-01-05', goalId: 'w' }), mkLog({ date: '2026-01-12', goalId: 'w' })] });
+    expect(m.bestStreakUnit).toBe('weeks');
   });
 
   it('weighted and strict differ when partials exist', () => {

@@ -12,6 +12,8 @@ const model: StatsModel = {
   completion: { percent: 72.4, done: 5, partial: 1, skipped: 1, vacation: 0, missed: 2 },
   currentStreak: 4,
   bestStreak: 9,
+  currentStreakUnit: 'days',
+  bestStreakUnit: 'weeks',
   heatmap: [
     { date: '2026-09-01', ratio: 1 },
     { date: '2026-09-02', ratio: 0 },
@@ -47,7 +49,7 @@ describe('stats charts', () => {
     );
     const c = model.completion;
     expect(screen.getByLabelText(`${t.completionSummary(72)}. ${t.countsSummary(c.done, c.partial, c.skipped, c.vacation, c.missed)}`)).toBeTruthy();
-    expect(screen.getByLabelText(`${t.currentStreak}: ${t.days(4)}. ${t.bestStreak}: ${t.days(9)}`)).toBeTruthy();
+    expect(screen.getByLabelText(`${t.currentStreak}: ${t.days(4)}. ${t.bestStreak}: ${t.weeks(9)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.heatmap}. ${t.heatmapSummary(4, 3, 1, 1)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.weeklyBars}. ${t.weeklySummary(2, 80, 70)}`)).toBeTruthy();
     expect(screen.getByLabelText(`${t.trend}. ${t.trendSummary(50, 70)}`)).toBeTruthy();
