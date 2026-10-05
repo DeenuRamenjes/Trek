@@ -118,21 +118,15 @@ describe('buildReview', () => {
 
 describe('time bucket and dayEndsAt', () => {
   const at = (h: number, m = 0) => new Date(2026, 0, 5, h, m).toISOString();
-  it('shifts the logged time by dayEndsAt like the logical day', () => {
-    expect(timeBucket(at(1, 30), 3)).toBe('night');
-    expect(timeBucket(at(5, 30), 3)).toBe('night');
-    expect(timeBucket(at(9), 3)).toBe('morning');
-    expect(timeBucket(at(9), 0)).toBe('morning');
-    expect(timeBucket(at(2, 30), 3)).toBe('night');
-    expect(timeBucket(at(15), 3)).toBe('afternoon');
+  it('uses the local clock hour, unshifted by dayEndsAt', () => {
+    expect(timeBucket(at(5, 30))).toBe('morning');
+    expect(timeBucket(at(1, 30))).toBe('night');
+    expect(timeBucket(at(15))).toBe('afternoon');
   });
-  it('best time slot buckets with the goal dayEndsAt', () => {
-    const base = mkCtx();
-    const logs = [mkLog({ date: '2026-01-05', loggedAt: at(8) })];
-    const run = (dayEndsAt: number) =>
-      buildReview({ period: { kind: 'week', anchor: '2026-01-07' }, weekStart: 1, today: '2026-01-14', ctxs: [{ ...base, dayEndsAt }], logs }).bestTimeSlot;
-    expect(run(0)).toEqual({ kind: 'bucket', bucket: 'morning', count: 1 });
-    expect(run(4)).toEqual({ kind: 'bucket', bucket: 'night', count: 1 });
+  it('best time slot ignores dayEndsAt: 05:30 is morning with dayEndsAt 3', () => {
+    const logs = [mkLog({ date: '2026-01-05', loggedAt: at(5, 30) })];
+    const r = buildReview({ period: { kind: 'week', anchor: '2026-01-07' }, weekStart: 1, today: '2026-01-14', ctxs: [{ ...mkCtx(), dayEndsAt: 3 }], logs });
+    expect(r.bestTimeSlot).toEqual({ kind: 'bucket', bucket: 'morning', count: 1 });
   });
 });
 

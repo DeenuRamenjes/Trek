@@ -86,7 +86,7 @@
 
 ## Phase 7 decisions
 - Route params: `week-YYYY-MM-DD` and `month-YYYY-MM` (`src/features/reviews/periodParam.ts`); invalid params show a "Review not found" state. Header navigation keeps period in local state; next is disabled when the next period starts after the logical today.
-- `timeBucket(loggedAt, dayEndsAt)` classifies the hour of the logged time minus `dayEndsAt` hours (same shift as the logical day), so with `dayEndsAt` 3 a log at 05:30 is "night".
+- `timeBucket(loggedAt)` uses the local clock hour (design 3.7); `dayEndsAt` only decides the logical date.
 - Filler insights (`mostConsistentGoal`, `totalDone`, `dueDays`, magnitude 0) are added only when fewer than 2 real insights exist and the period has a scored day.
 - timesPerWeek vacation totals were already in days (week units only for done/missed); a test now locks this.
 - `IconButton` gained an optional `disabled` prop.
