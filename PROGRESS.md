@@ -146,6 +146,7 @@
 - Reanimated layout transitions (Collapse, list reflow) are allowed by CLAUDE.md §5.1 (approved diff D4).
 
 ## Deviations from CLAUDE.md
+- Phase 6: the history day editor is a fade modal, not a gesture bottom sheet (accepted in the final review; revisit in Phase 13 polish).
 - None beyond the approved diffs D1–D15. Plan amendments approved during execution are listed under Decisions.
 
 ## Open questions

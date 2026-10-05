@@ -16,9 +16,14 @@ export type LogInput = {
 
 /** Insert, or update the row for (goalId, date, slotId); null slotId counts as one value. loggedAt stays from the first insert. On update an undefined note keeps the existing one; null clears it. */
 export async function upsertLog(db: TrekDb, input: LogInput): Promise<Log> {
+  return withTransaction(db, (tx) => upsertLogTx(tx, input));
+}
+
+/** upsertLog without its own transaction; call only inside an open withTransaction. */
+export async function upsertLogTx(tx: TrekDb, input: LogInput): Promise<Log> {
   const now = nowIso();
   const slotId = input.slotId ?? null;
-  return withTransaction(db, async (tx) => {
+  {
     const key = and(
       eq(logs.goalId, input.goalId),
       eq(logs.date, input.date),
@@ -45,7 +50,12 @@ export async function upsertLog(db: TrekDb, input: LogInput): Promise<Log> {
       updatedAt: now,
     });
     return (await tx.select().from(logs).where(eq(logs.id, id)))[0];
-  });
+  }
+}
+
+/** deleteLog without its own transaction or change event; call only inside an open withTransaction. */
+export async function deleteLogTx(tx: TrekDb, id: string): Promise<void> {
+  await tx.delete(logs).where(eq(logs.id, id));
 }
 
 export async function deleteLog(db: TrekDb, id: string): Promise<void> {

@@ -7,7 +7,8 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSpring, withTi
 import { onDbChanged } from '../../db/changes';
 import { useDb } from '../../db/DbProvider';
 import { useLiveLogs } from '../../db/live';
-import { deleteLog, upsertLog } from '../../db/repositories';
+import { deleteLogTx, upsertLogTx } from '../../db/repositories';
+import { withTransaction } from '../../db/transaction';
 import { parseDate } from '../../domain/dates';
 import { slotsForDate } from '../../domain/dayStatus';
 import type { GoalContext } from '../../domain/types';
@@ -111,15 +112,20 @@ export function HistoryScreen({ goalId }: { goalId: string }) {
 
   const save = async (state: EditState) => {
     if (!editing) return;
-    for (const op of planDayEdit(goal, editingSlots, editingLogs, state)) {
-      if (op.kind === 'delete') await deleteLog(db, op.id);
-      else await upsertLog(db, { goalId, date: editing, slotId: op.slotId, value: op.value, status: op.status, note: op.note });
-    }
+    const ops = planDayEdit(goal, editingSlots, editingLogs, state);
+    await withTransaction(db, async (tx) => {
+      for (const op of ops) {
+        if (op.kind === 'delete') await deleteLogTx(tx, op.id);
+        else await upsertLogTx(tx, { goalId, date: editing, slotId: op.slotId, value: op.value, status: op.status, note: op.note });
+      }
+    });
     haptic('tap');
     setEditing(null);
   };
   const clear = async () => {
-    for (const l of editingLogs) await deleteLog(db, l.id);
+    await withTransaction(db, async (tx) => {
+      for (const l of editingLogs) await deleteLogTx(tx, l.id);
+    });
     haptic('tap');
     setEditing(null);
   };
