@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Trek",
+    "slug": "trek",
+    "scheme": "trek",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "bundleIdentifier": "com.deenuramenjes.trek",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.deenuramenjes.trek",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "platforms": [
+      "ios",
+      "android"
+    ]
+  }
+}
