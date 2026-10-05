@@ -16,15 +16,16 @@ export function withTransaction<T>(db: TrekDb, fn: (tx: TrekDb) => Promise<T>): 
   const previous = queues.get(db) ?? Promise.resolve();
   const run = async (): Promise<T> => {
     await db.run(sql`BEGIN`);
+    let result: T;
     try {
-      const result = await fn(db);
+      result = await fn(db);
       await db.run(sql`COMMIT`);
-      emitDbChanged();
-      return result;
     } catch (e) {
       await db.run(sql`ROLLBACK`);
       throw e;
     }
+    emitDbChanged();
+    return result;
   };
   const next = previous.then(run, run);
   queues.set(db, next.catch(() => undefined));
