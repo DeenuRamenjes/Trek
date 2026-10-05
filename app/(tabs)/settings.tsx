@@ -14,6 +14,15 @@ export default function SettingsScreen() {
   return (
     <Screen edges={['top', 'left', 'right']}>
       <AppText variant="display">{strings.tabs.settings}</AppText>
+      <Card>
+        <Button
+          variant="secondary"
+          label={strings.settings.vacation}
+          icon="airplane"
+          accessibilityLabel={strings.settings.open(strings.settings.vacation)}
+          onPress={() => router.push('/vacation')}
+        />
+      </Card>
       {__DEV__ ? (
         <Card>
           <AppText variant="headline">{strings.devTools.title}</AppText>

@@ -78,6 +78,22 @@
 - Log sheet: Save is disabled with a hint when a note has no progress (value 0); a value of 0 without a note clears the entry. Phase 6 history sheet must allow a note with value 0 or skipped status.
 - Today loads goal contexts with `loadGoalContexts` and reloads on every `dbChanged`.
 
+## Phase 6 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no output.
+- `npx jest`: `Test Suites: 60 passed, 60 total`; `Tests: 558 passed, 558 total`; `Snapshots: 1 passed, 1 total`.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported.
+
+## Phase 6 decisions
+- The history day editor uses the existing modal sheet.
+- Goals with slots are edited through slot chips in the history sheet.
+- History notes are allowed together with skipped and partial status.
+- Vacation: `/vacation` is a list/form screen reached from a Settings row. New vacations must start today or later; editing keeps the original start. Active vacations can be edited or ended (end date = yesterday, or deleted if not yet started); past ones are view/delete only. Delete asks for confirmation inline.
+
+## Phase 6 device verification pending (run in Phase 13)
+- History month swipe feel (pan, snap, spring back).
+- History day editor sheet gesture.
+
 ## Phase 5 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: 0 errors.
 - `npx jest`: 55 suites, 528 tests pass (after Polish stats charts).
