@@ -12,6 +12,7 @@ import { AppText, Button, Card, Chip, GoalIcon, Icon, IconButton } from '../../u
 import { springs, Stagger, useReduceMotion } from '../../ui/motion';
 import { useTheme } from '../../ui/ThemeProvider';
 import { minTapTarget, spacing } from '../../ui/tokens';
+import { GroupsSection } from '../groups/GroupsSection';
 import { haptic } from '../tracking/haptics';
 import { useLogicalToday } from '../tracking/useLogicalToday';
 import { GoalActionSheet, type GoalAction } from './GoalActionSheet';
@@ -140,6 +141,7 @@ export function GoalsList() {
 
   return (
     <View style={styles.root}>
+      <GroupsSection />
       <View style={styles.header}>
         <AppText variant="display">{s.title}</AppText>
         <Button label={s.newGoal} icon="add" onPress={() => router.push('/goal/new')} />

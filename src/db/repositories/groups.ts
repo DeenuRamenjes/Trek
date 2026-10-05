@@ -1,4 +1,4 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, desc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
 import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
@@ -43,11 +43,29 @@ export async function reorderGroups(db: TrekDb, ids: string[]): Promise<void> {
 }
 
 export async function setGroupGoals(db: TrekDb, groupId: string, goalIds: string[]): Promise<void> {
-  await withTransaction(db, async (tx) => {
-    await tx.delete(groupGoals).where(eq(groupGoals.groupId, groupId));
-    for (const goalId of new Set(goalIds)) await tx.insert(groupGoals).values({ groupId, goalId });
-    await tx.update(groups).set({ updatedAt: nowIso() }).where(eq(groups.id, groupId));
-  });
+  await withTransaction(db, (tx) => setGroupGoalsTx(tx, groupId, goalIds));
+}
+
+/** setGroupGoals without its own transaction; call only inside an open withTransaction. */
+export async function setGroupGoalsTx(tx: TrekDb, groupId: string, goalIds: string[]): Promise<void> {
+  await tx.delete(groupGoals).where(eq(groupGoals.groupId, groupId));
+  for (const goalId of new Set(goalIds)) await tx.insert(groupGoals).values({ groupId, goalId });
+  await tx.update(groups).set({ updatedAt: nowIso() }).where(eq(groups.id, groupId));
+}
+
+/** createGroup without its own emit; call only inside an open withTransaction. Appends at the end. */
+export async function createGroupTx(tx: TrekDb, input: GroupInput): Promise<Group> {
+  const now = nowIso();
+  const id = newId();
+  const last = (await tx.select().from(groups).orderBy(desc(groups.sortOrder)).limit(1))[0];
+  const sortOrder = input.sortOrder ?? (last ? last.sortOrder + 1 : 0);
+  await tx.insert(groups).values({ ...input, sortOrder, id, createdAt: now, updatedAt: now });
+  return (await getGroup(tx, id)) as Group;
+}
+
+/** updateGroup without its own emit; call only inside an open withTransaction. */
+export async function updateGroupTx(tx: TrekDb, id: string, patch: Partial<GroupInput>): Promise<void> {
+  await tx.update(groups).set({ ...patch, updatedAt: nowIso() }).where(eq(groups.id, id));
 }
 
 export async function listGroupGoals(db: TrekDb, groupId?: string): Promise<GroupGoal[]> {
