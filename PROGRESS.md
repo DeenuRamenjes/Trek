@@ -7,7 +7,8 @@
 | 1 Scaffold, motion, tabs, splash | Complete |
 | 2 Data | Complete (device verification pending) |
 | 3 Domain | Complete |
-| 4–13 | Not started |
+| 4 Goals and Today | Complete (device verification pending) |
+| 5–13 | Not started |
 
 ## Phase 0 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
@@ -60,6 +61,29 @@
 ## Phase 3 carried forward
 - Phase 13: stats performance check with the 3-year seed (goals x logs); `completion`/`dailySeries` scan logs per goal-day.
 - Phase 8: the reconciler converts ISO weekday to the expo-notifications weekday (1 = Sunday) and renders strings from `contentKey`.
+
+## Phase 4 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no output.
+- `npx jest`: `Test Suites: 50 passed, 50 total`; `Tests: 497 passed, 497 total`; `Snapshots: 1 passed, 1 total`.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: exit 0, `Exported: dist`.
+- Same command with `--platform android`: `Exported: dist`.
+
+## Phase 4 decisions
+- Color picker uses steppers plus a hex field, not a Skia drag picker.
+- Date and time fields are validated text fields (`YYYY-MM-DD`, `HH:mm`); no new dependency.
+- The AA badge uses the 3:1 non-text threshold.
+- `reminders.offsetMin` is stored as negative minutes-before.
+- Today: undo restores the exact previous log (deleted if none existed, else prior value, status and note). Tapping a finished row clears its logs (also undoable). A slotted check row marks or clears every slot; slot chips act on one slot.
+- Today: "Back up now" navigates to `/settings` until Phase 11. Snooze writes `backupBannerSnoozedUntil` (3 days, from `BACKUP_SNOOZE_DAYS`); the note limit comes from `NOTE_MAX_LENGTH` (`src/domain/limits.ts`).
+- Log sheet: a value of 0 clears the entry, so a note cannot be saved without progress.
+- Today loads goal contexts with `loadGoalContexts` and reloads on every `dbChanged`.
+
+## Phase 4 device verification pending (run in Phase 13)
+- Swipe gestures feel (right = done, left = skipped) and long-press.
+- Goals drag reorder.
+- Confetti burst on streak milestones 7/30/100.
+- Haptics on check-off.
+- Day rollover refresh of the Today tab.
 
 ## Phase 2 device verification pending (run in Phase 13)
 - Migrations applying on a real iOS and Android development build (first launch and upgrade).

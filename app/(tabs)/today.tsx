@@ -1,14 +1,5 @@
-import { AppText, Card, Screen } from '../../src/ui/components';
-import { strings } from '../../src/strings/en';
+import { TodayScreen } from '../../src/features/tracking/TodayScreen';
 
-export default function TodayScreen() {
-  return (
-    <Screen edges={['top', 'left', 'right']}>
-      <AppText variant="display">{strings.tabs.today}</AppText>
-      <Card>
-        <AppText variant="headline">{strings.today.emptyTitle}</AppText>
-        <AppText tone="secondary">{strings.today.emptyBody}</AppText>
-      </Card>
-    </Screen>
-  );
+export default function TodayRoute() {
+  return <TodayScreen />;
 }
