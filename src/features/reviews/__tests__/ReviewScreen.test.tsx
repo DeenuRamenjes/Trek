@@ -14,7 +14,8 @@ import { ReviewScreen } from '../ReviewScreen';
 const mockBack = jest.fn();
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace }) }));
+const mockSetParams = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack, push: mockPush, replace: mockReplace, setParams: mockSetParams }) }));
 
 const r = strings.review;
 const today = logicalToday(new Date(), 0);
@@ -31,6 +32,7 @@ beforeEach(() => {
   mockBack.mockClear();
   mockPush.mockClear();
   mockReplace.mockClear();
+  mockSetParams.mockClear();
 });
 
 async function show(db: TrekDb, param: string | undefined) {
@@ -55,11 +57,14 @@ describe.each(['week', 'month'] as const)('ReviewScreen %s (seed data)', (kind) 
     expect(screen.getByLabelText(r.nextPeriod).props.accessibilityState.disabled).toBe(true);
 
     await fireEvent.press(screen.getByLabelText(r.previousPeriod));
-    const prevLabel = periodLabel(previousPeriod(period, weekStart), weekStart);
+    const prevPeriod = previousPeriod(period, weekStart);
+    const prevLabel = periodLabel(prevPeriod, weekStart);
     expect(prevLabel).not.toBe(periodLabel(period, weekStart));
     await screen.findByText(prevLabel);
     expect(screen.getByLabelText(r.nextPeriod).props.accessibilityState.disabled).toBe(false);
     await screen.findByLabelText(/^Overall completion \d+ percent$/);
+    // URL param updated to match viewed period
+    expect(mockSetParams).toHaveBeenCalledWith({ period: formatPeriodParam(prevPeriod, weekStart) });
   }, 30000);
 });
 

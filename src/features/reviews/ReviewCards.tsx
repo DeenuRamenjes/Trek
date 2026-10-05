@@ -27,15 +27,16 @@ export function ChangeChip({ delta }: { delta: number | null }) {
     );
   }
   const pts = Math.round(Math.abs(delta));
-  const up = delta >= 0;
+  const isFlat = pts === 0;
+  const up = delta > 0;
   return (
     <View
       style={[styles.chip, { backgroundColor: colors.accentMuted }]}
       accessible
-      accessibilityLabel={pts === 0 ? r.changeFlatLabel : up ? r.changeUpLabel(pts) : r.changeDownLabel(pts)}
+      accessibilityLabel={isFlat ? r.changeFlatLabel : up ? r.changeUpLabel(pts) : r.changeDownLabel(pts)}
     >
-      <Icon name={up ? uiIcons.up : uiIcons.down} size={14} color={up ? colors.status.done : colors.status.missed} />
-      <AppText variant="label">{up ? r.changeUp(pts) : r.changeDown(pts)}</AppText>
+      <Icon name={isFlat ? uiIcons.remove : up ? uiIcons.up : uiIcons.down} size={14} color={isFlat ? colors.textSecondary : up ? colors.status.done : colors.status.missed} />
+      <AppText variant="label">{isFlat ? r.changeFlatLabel : up ? r.changeUp(pts) : r.changeDown(pts)}</AppText>
     </View>
   );
 }

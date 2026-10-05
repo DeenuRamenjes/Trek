@@ -354,7 +354,7 @@ export const strings = {
     changeDown: (pts: number) => `\u2212${pts} pts`,
     changeUpLabel: (pts: number) => `Up ${pts} points versus previous period`,
     changeDownLabel: (pts: number) => `Down ${pts} points versus previous period`,
-    changeFlatLabel: 'No change versus previous period',
+    changeFlatLabel: 'No change',
     noPrevious: 'No previous data',
     noData: 'No data yet',
     overallLabel: (pct: number) => `Overall completion ${pct} percent`,
@@ -374,8 +374,12 @@ export const strings = {
     slotCount: (label: string, count: number) => `${label} (${count})`,
     buckets: { morning: 'Morning', afternoon: 'Afternoon', evening: 'Evening', night: 'Night' },
     goalValue: (name: string, pct: number) => `${name} ${pct}%`,
-    totalsLine: (done: number, skipped: number, vacation: number) =>
-      `Done ${done} \u00b7 Skipped ${skipped} \u00b7 Vacation ${vacation}`,
+    totalsLine: (done: number, skipped: number, vacation: number) => {
+      const d = done === 1 ? 'day' : 'days';
+      const s = skipped === 1 ? 'day' : 'days';
+      const v = vacation === 1 ? 'day' : 'days';
+      return `Done ${done} ${d} \u00b7 Skipped ${skipped} ${s} \u00b7 Vacation ${vacation} ${v}`;
+    },
     totalsSummary: (done: number, skipped: number, vacation: number) => `Done ${done}, skipped ${skipped}, vacation ${vacation}`,
     perGoal: 'By goal',
     best: 'Best goal',

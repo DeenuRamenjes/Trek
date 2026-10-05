@@ -15,7 +15,7 @@ import { loadGoalContexts } from '../goals/goalContexts';
 import { useSettings } from '../settings/settingsStore';
 import { useLogicalToday } from '../tracking/useLogicalToday';
 import { BestTimeRow, BestWorstRow, InsightCards, OverallCard, PerGoalCard, StreaksRow, TotalsCard } from './ReviewCards';
-import { canGoNext, nextPeriod, parsePeriodParam, periodLabel } from './periodParam';
+import { canGoNext, formatPeriodParam, nextPeriod, parsePeriodParam, periodLabel } from './periodParam';
 
 const r = strings.review;
 
@@ -65,18 +65,35 @@ export function ReviewScreen({ param }: { param: string | undefined }) {
     );
   }
 
+  const handlePreviousPeriod = () => {
+    const prev = previousPeriod(period, weekStart);
+    setPeriod(prev);
+    router.setParams({ period: formatPeriodParam(prev, weekStart) });
+  };
+
+  const handleNextPeriod = () => {
+    const next = nextPeriod(period, weekStart);
+    setPeriod(next);
+    router.setParams({ period: formatPeriodParam(next, weekStart) });
+  };
+
   const header = (
     <View style={styles.nav}>
-      <IconButton icon={uiIcons.back} accessibilityLabel={r.previousPeriod} onPress={() => setPeriod(previousPeriod(period, weekStart))} />
+      <IconButton icon={uiIcons.back} accessibilityLabel={strings.navigation.back} onPress={() => router.back()} />
       <AppText variant="headline" accessibilityRole="header">
         {periodLabel(period, weekStart)}
       </AppText>
-      <IconButton
-        icon={uiIcons.forward}
-        accessibilityLabel={r.nextPeriod}
-        disabled={!canGoNext(period, weekStart, today)}
-        onPress={() => setPeriod(nextPeriod(period, weekStart))}
-      />
+      <View style={styles.navRight}>
+        <View style={styles.rotated}>
+          <IconButton icon={uiIcons.forward} accessibilityLabel={r.previousPeriod} onPress={handlePreviousPeriod} />
+        </View>
+        <IconButton
+          icon={uiIcons.forward}
+          accessibilityLabel={r.nextPeriod}
+          disabled={!canGoNext(period, weekStart, today)}
+          onPress={handleNextPeriod}
+        />
+      </View>
     </View>
   );
 
@@ -114,4 +131,6 @@ export function ReviewScreen({ param }: { param: string | undefined }) {
 const styles = StyleSheet.create({
   stack: { gap: spacing.md },
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  navRight: { flexDirection: 'row', alignItems: 'center' },
+  rotated: { transform: [{ scaleX: -1 }] },
 });
