@@ -1,7 +1,7 @@
 import { strings } from '../../strings/en';
 import { buildReview, formatInsight, periodBounds, previousPeriod, timeBucket } from '../reviewBuilder';
 import type { Log } from '../types';
-import { mkCtx, mkGoal, mkLog, mkVersion } from './fixtures';
+import { mkCtx, mkGoal, mkLog, mkVacation, mkVersion } from './fixtures';
 
 describe('periods', () => {
   it('week bounds follow weekStart', () => {
@@ -113,5 +113,99 @@ describe('buildReview', () => {
     const r = buildReview({ period: { kind: 'month', anchor: '2026-01-10' }, weekStart: 1, today: '2026-02-01', ctxs: [ctx], logs });
     const i = r.insights.find((x) => x.id === 'mostSkippedWeekday')!;
     expect(formatInsight(i, strings.insights)).toBe('You skip most on Monday');
+  });
+});
+
+describe('time bucket and dayEndsAt', () => {
+  const at = (h: number, m = 0) => new Date(2026, 0, 5, h, m).toISOString();
+  it('shifts the logged time by dayEndsAt like the logical day', () => {
+    expect(timeBucket(at(1, 30), 3)).toBe('night');
+    expect(timeBucket(at(5, 30), 3)).toBe('night');
+    expect(timeBucket(at(9), 3)).toBe('morning');
+    expect(timeBucket(at(9), 0)).toBe('morning');
+    expect(timeBucket(at(2, 30), 3)).toBe('night');
+    expect(timeBucket(at(15), 3)).toBe('afternoon');
+  });
+  it('best time slot buckets with the goal dayEndsAt', () => {
+    const base = mkCtx();
+    const logs = [mkLog({ date: '2026-01-05', loggedAt: at(8) })];
+    const run = (dayEndsAt: number) =>
+      buildReview({ period: { kind: 'week', anchor: '2026-01-07' }, weekStart: 1, today: '2026-01-14', ctxs: [{ ...base, dayEndsAt }], logs }).bestTimeSlot;
+    expect(run(0)).toEqual({ kind: 'bucket', bucket: 'morning', count: 1 });
+    expect(run(4)).toEqual({ kind: 'bucket', bucket: 'night', count: 1 });
+  });
+});
+
+describe('buildReview carry-overs', () => {
+  const week = { kind: 'week' as const, anchor: '2026-01-07' };
+  const run = (ctxs: ReturnType<typeof mkCtx>[], logs: Log[], today = '2026-01-14') =>
+    buildReview({ period: week, weekStart: 1, today, ctxs, logs });
+
+  it('always yields at least 2 insights when a day is scored (no change vs previous)', () => {
+    const ctx = weekdaysCtx();
+    const same = days(['2026-01-05', '2026-01-06', '2025-12-29', '2025-12-30']);
+    const r = run([ctx], same);
+    expect(r.insights.length).toBeGreaterThanOrEqual(2);
+    expect(r.insights.length).toBeLessThanOrEqual(3);
+    const ids = r.insights.map((i) => i.id);
+    expect(ids).toContain('mostConsistentGoal');
+    expect(ids).toContain('totalDone');
+    expect(formatInsight(r.insights.find((i) => i.id === 'totalDone')!, strings.insights)).toBe('Days done this week: 2');
+    expect(formatInsight(r.insights.find((i) => i.id === 'mostConsistentGoal')!, strings.insights)).toBe('Reading was your most consistent goal at 40%');
+  });
+
+  it('still gives 2 insights when nothing was done but days were due', () => {
+    const r = run([weekdaysCtx()], []);
+    expect(r.insights.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('no insights when no day is scored', () => {
+    const ctx = mkCtx({ goal: mkGoal({ startDate: '2026-03-01' }) });
+    expect(run([ctx], []).insights).toEqual([]);
+  });
+
+  it('fillers do not displace real insights', () => {
+    const ctx = weekdaysCtx();
+    const logs = days(['2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2025-12-29', '2025-12-30', '2025-12-31']);
+    const ids = run([ctx], logs).insights.map((i) => i.id);
+    expect(ids).toContain('goalImproved');
+    expect(ids).not.toContain('totalDone');
+  });
+
+  it('timesPerWeek vacation counts stay in days in the totals', () => {
+    const ctx = mkCtx({
+      goal: mkGoal({ startDate: '2026-01-05' }),
+      versions: [mkVersion({ effectiveFrom: '2026-01-05', scheduleType: 'timesPerWeek', timesPerWeek: 3 })],
+      vacations: [mkVacation({ startDate: '2026-01-07', endDate: '2026-01-10' })],
+    });
+    const r = run([ctx], days(['2026-01-05', '2026-01-06']));
+    // 4 vacation days -> adjusted target ceil(3*3/7) = 2, met by 2 done days: one done week unit.
+    expect(r.totals).toEqual({ done: 1, skipped: 0, vacation: 4, missed: 0 });
+    expect(r.overall.percent).toBe(100);
+  });
+
+  it('streak gained insight with days', () => {
+    const ctx = mkCtx({ goal: mkGoal({ startDate: '2026-01-05' }) });
+    const r = run([ctx], days(['2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09', '2026-01-10', '2026-01-11']));
+    const gained = r.insights.find((i) => i.id === 'streakGained')!;
+    expect(gained.params).toEqual({ goal: 'G', days: 7 });
+    expect(formatInsight(gained, strings.insights)).toBe('G streak grew by 7 days');
+  });
+
+  it('slot goal: one of two slots done is a partial day with 0.5 credit', () => {
+    const ctx = {
+      ...mkCtx({ goal: mkGoal({ startDate: '2026-01-05' }) }),
+      slots: [
+        { id: 's1', scheduleVersionId: 'v1', weekday: 0, time: '08:00', label: 'AM' },
+        { id: 's2', scheduleVersionId: 'v1', weekday: 0, time: '20:00', label: 'PM' },
+      ],
+    } as ReturnType<typeof mkCtx>;
+    const r = buildReview({
+      period: { kind: 'week', anchor: '2026-01-05' }, weekStart: 1, today: '2026-01-06', ctxs: [ctx],
+      logs: [mkLog({ date: '2026-01-05', slotId: 's1' })],
+    });
+    expect(r.overall.partial).toBe(1);
+    expect(r.overall.credit).toBeCloseTo(0.5);
+    expect(r.perGoal[0].percent).toBeCloseTo(50);
   });
 });

@@ -1,3 +1,4 @@
+import { subHours } from 'date-fns';
 import { addDaysTo, formatDate, parseDate, weekStartOf } from './dates';
 import { bestWeekday, completion, perGoal, skippedByWeekday } from './statsCalculator';
 import type { Completion, StatsMode } from './statsCalculator';
@@ -13,7 +14,10 @@ export type InsightId =
   | 'goalDeclined'
   | 'streakGained'
   | 'mostSkippedWeekday'
-  | 'perfectPeriod';
+  | 'perfectPeriod'
+  | 'mostConsistentGoal'
+  | 'totalDone'
+  | 'dueDays';
 
 /** Data-only insight; render with `formatInsight`. Params are strings or numbers. */
 export type Insight = { id: InsightId; params: Record<string, string | number>; magnitude: number };
@@ -79,8 +83,9 @@ export function previousPeriod(period: Period, weekStart: number): Period {
   return { kind: 'month', anchor: formatDate(new Date(d.getFullYear(), d.getMonth() - 1, 1)) };
 }
 
-export function timeBucket(loggedAt: string): TimeBucket {
-  const h = new Date(loggedAt).getHours();
+/** Time-of-day bucket of the logged time shifted by `dayEndsAt` hours, like the logical day. */
+export function timeBucket(loggedAt: string, dayEndsAt = 0): TimeBucket {
+  const h = subHours(new Date(loggedAt), dayEndsAt).getHours();
   if (h >= 5 && h < 12) return 'morning';
   if (h >= 12 && h < 17) return 'afternoon';
   if (h >= 17 && h < 22) return 'evening';
@@ -94,10 +99,11 @@ function bestTimeSlot(ctxs: GoalContext[], logs: Log[], from: string, to: string
     const ctx = goals.get(l.goalId);
     if (!ctx || l.status !== 'done' || l.date < from || l.date > to) continue;
     const label = l.slotId ? ctx.slots?.find((s) => s.id === l.slotId)?.label : null;
-    const key = label ? `slot:${label}` : `bucket:${timeBucket(l.loggedAt)}`;
+    const bucket = timeBucket(l.loggedAt, ctx.dayEndsAt);
+    const key = label ? `slot:${label}` : `bucket:${bucket}`;
     const entry = counts.get(key) ?? {
       count: 0,
-      result: label ? { kind: 'slot', label, count: 0 } : { kind: 'bucket', bucket: timeBucket(l.loggedAt), count: 0 },
+      result: label ? { kind: 'slot', label, count: 0 } : { kind: 'bucket', bucket, count: 0 },
     };
     entry.count += 1;
     entry.result.count = entry.count;
@@ -209,6 +215,16 @@ export function buildReview(args: {
     insights.push({ id: 'perfectPeriod', params: { period: periodWord }, magnitude: 15 });
   }
   insights.sort(compareInsights);
+  // Filler rules so a scored period always has at least 2 insights; they never displace real ones.
+  if (insights.length < 2 && overall.denominator > 0) {
+    const fillers: Insight[] = [];
+    if (bestGoal && bestGoal.percent > 0) {
+      fillers.push({ id: 'mostConsistentGoal', params: { goal: bestGoal.name, percent: round(bestGoal.percent) }, magnitude: 0 });
+    }
+    fillers.push({ id: 'totalDone', params: { count: overall.done, period: periodWord }, magnitude: 0 });
+    fillers.push({ id: 'dueDays', params: { count: overall.denominator, period: periodWord }, magnitude: 0 });
+    insights.push(...fillers.slice(0, 2 - insights.length));
+  }
 
   return {
     period,

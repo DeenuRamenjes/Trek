@@ -78,6 +78,22 @@
 - Log sheet: Save is disabled with a hint when a note has no progress (value 0); a value of 0 without a note clears the entry. Phase 6 history sheet must allow a note with value 0 or skipped status.
 - Today loads goal contexts with `loadGoalContexts` and reloads on every `dbChanged`.
 
+## Phase 7 verification (run on 2026-10-05)
+- `npx tsc --noEmit`: exit 0, no output.
+- `npx jest`: `Test Suites: 62 passed, 62 total`; `Tests: 581 passed, 581 total`; `Snapshots: 1 passed, 1 total`.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported.
+
+## Phase 7 decisions
+- Route params: `week-YYYY-MM-DD` and `month-YYYY-MM` (`src/features/reviews/periodParam.ts`); invalid params show a "Review not found" state. Header navigation keeps period in local state; next is disabled when the next period starts after the logical today.
+- `timeBucket(loggedAt, dayEndsAt)` classifies the hour of the logged time minus `dayEndsAt` hours (same shift as the logical day), so with `dayEndsAt` 3 a log at 05:30 is "night".
+- Filler insights (`mostConsistentGoal`, `totalDone`, `dueDays`, magnitude 0) are added only when fewer than 2 real insights exist and the period has a scored day.
+- timesPerWeek vacation totals were already in days (week units only for done/missed); a test now locks this.
+- `IconButton` gained an optional `disabled` prop.
+
+## Phase 7 device verification pending (run in Phase 13)
+- Review completion counter animation (400 ms) and per-goal bar stagger on iOS and Android, with reduce motion on and off.
+
 ## Phase 6 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
 - `npx jest`: `Test Suites: 60 passed, 60 total`; `Tests: 558 passed, 558 total`; `Snapshots: 1 passed, 1 total`.
@@ -166,7 +182,7 @@ These review notes were deferred to the phase that builds on the affected code. 
   - Charts must expose their values to screen readers; selected chips and the date strip must not rely on fill color alone.
 - Phase 5: `AnimatedNumber` `fromRef` should track the last shown value.
 - Phase 6: history day cells are about 42.9 pt wide on a 360 dp screen (below 44 pt); day accessibility labels should be formatted with date-fns (for example "5 October 2026, Done").
-- Phase 7: move review sentence assembly ("Reading 100%", the totals line) into string templates.
+- Phase 7: move review sentence assembly ("Reading 100%", the totals line) into string templates. Done in Phase 7 (`review.goalValue`, `review.totalsLine`).
 - Phase 9: settings option labels currently in mock data move into the strings file.
 - Phase 13:
   - TabBar: move icon size, gap and pill height to tokens, and check the indicator's vertical alignment.

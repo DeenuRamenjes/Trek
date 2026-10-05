@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -7,7 +6,6 @@ import { useDb } from '../../db/DbProvider';
 import { useLiveLogs } from '../../db/live';
 import { listGroupGoals, listGroups } from '../../db/repositories';
 import type { Group } from '../../db/schema';
-import { parseDate, weekStartOf } from '../../domain/dates';
 import type { StatsMode, StatsRange } from '../../domain/statsCalculator';
 import type { GoalContext } from '../../domain/types';
 import { strings } from '../../strings/en';
@@ -17,6 +15,7 @@ import { Skeleton, Stagger } from '../../ui/motion';
 import { spacing } from '../../ui/tokens';
 import { loadGoalContexts } from '../goals/goalContexts';
 import { useSettings } from '../settings/settingsStore';
+import { formatPeriodParam } from '../reviews/periodParam';
 import { useLogicalToday } from '../tracking/useLogicalToday';
 import { BestWeekday, CompletionRing, Heatmap, PerGoalBars, StreakCard, TrendLine, WeeklyBars } from './charts';
 import { ALL_GOALS, GroupDropdown } from './GroupDropdown';
@@ -93,8 +92,8 @@ export function StatsScreen() {
   );
 
   const createGroup = () => router.push('/group/new');
-  const weekPeriod = `week-${weekStartOf(today, weekStart)}`;
-  const monthPeriod = `month-${format(parseDate(today), 'yyyy-MM')}`;
+  const weekPeriod = formatPeriodParam({ kind: 'week', anchor: today }, weekStart);
+  const monthPeriod = formatPeriodParam({ kind: 'month', anchor: today }, weekStart);
 
   return (
     <Screen edges={['top', 'left', 'right']}>
