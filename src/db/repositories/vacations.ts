@@ -1,5 +1,6 @@
 import { asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
 import { addDaysToDate } from '../dates';
 import { newId, nowIso } from '../ids';
@@ -52,11 +53,15 @@ export async function endVacationNow(db: TrekDb, id: string, today: string): Pro
   if (!v) return;
   const end = addDaysToDate(today, -1);
   if (end < v.startDate) await deleteVacation(db, id);
-  else await db.update(vacations).set({ endDate: end, updatedAt: nowIso() }).where(eq(vacations.id, id));
+  else {
+    await db.update(vacations).set({ endDate: end, updatedAt: nowIso() }).where(eq(vacations.id, id));
+    emitDbChanged();
+  }
 }
 
 export async function deleteVacation(db: TrekDb, id: string): Promise<void> {
   await db.delete(vacations).where(eq(vacations.id, id));
+  emitDbChanged();
 }
 
 export async function listVacations(db: TrekDb): Promise<VacationWithGoals[]> {

@@ -1,4 +1,5 @@
 import { sql } from 'drizzle-orm';
+import { emitDbChanged } from './changes';
 import type { TrekDb } from './client';
 
 // Tail of each db's queue. Calls on the same db run one at a time so BEGINs never nest.
@@ -18,6 +19,7 @@ export function withTransaction<T>(db: TrekDb, fn: (tx: TrekDb) => Promise<T>): 
     try {
       const result = await fn(db);
       await db.run(sql`COMMIT`);
+      emitDbChanged();
       return result;
     } catch (e) {
       await db.run(sql`ROLLBACK`);

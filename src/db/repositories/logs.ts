@@ -1,5 +1,6 @@
 import { and, asc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
 import { logs, type Log } from '../schema';
@@ -49,6 +50,7 @@ export async function upsertLog(db: TrekDb, input: LogInput): Promise<Log> {
 
 export async function deleteLog(db: TrekDb, id: string): Promise<void> {
   await db.delete(logs).where(eq(logs.id, id));
+  emitDbChanged();
 }
 
 export async function listLogs(db: TrekDb, opts: { goalId?: string; from?: string; to?: string } = {}): Promise<Log[]> {

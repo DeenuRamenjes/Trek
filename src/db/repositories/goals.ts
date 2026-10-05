@@ -1,5 +1,6 @@
 import { asc, eq, isNull } from 'drizzle-orm';
 import type { TrekDb } from '../client';
+import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
 import { goalScheduleVersions, goalSlots, goals, reminders, type Goal } from '../schema';
@@ -39,6 +40,7 @@ export async function createGoal(db: TrekDb, input: GoalInput, today: string): P
 
 export async function updateGoal(db: TrekDb, id: string, patch: Partial<Omit<Goal, 'id' | 'createdAt'>>): Promise<void> {
   await db.update(goals).set({ ...patch, updatedAt: nowIso() }).where(eq(goals.id, id));
+  emitDbChanged();
 }
 
 export async function getGoal(db: TrekDb, id: string): Promise<Goal | undefined> {
@@ -54,6 +56,7 @@ export async function listGoals(db: TrekDb, opts: { includeArchived?: boolean } 
 
 export async function archiveGoal(db: TrekDb, id: string, at: string = nowIso()): Promise<void> {
   await db.update(goals).set({ archivedAt: at, updatedAt: nowIso() }).where(eq(goals.id, id));
+  emitDbChanged();
 }
 
 export async function reorderGoals(db: TrekDb, ids: string[]): Promise<void> {
@@ -67,6 +70,7 @@ export async function reorderGoals(db: TrekDb, ids: string[]): Promise<void> {
 
 export async function deleteGoal(db: TrekDb, id: string): Promise<void> {
   await db.delete(goals).where(eq(goals.id, id));
+  emitDbChanged();
 }
 
 /** Copies the goal, its current schedule version (latest effective on or before today), slots and reminders. */

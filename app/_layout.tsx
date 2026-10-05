@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DbProvider } from '../src/db/DbProvider';
 import { strings } from '../src/strings/en';
 import { AppText, Screen } from '../src/ui/components';
 import { useAppReady } from '../src/features/startup/useAppReady';
@@ -49,7 +50,9 @@ export default function RootLayout() {
         <ThemeProvider mode={theme === 'system' ? undefined : theme} accent={accent}>
           <MotionConfig />
           <ThemedSystemBars />
-          <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
+          <DbProvider>
+            <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
+          </DbProvider>
           {splashDone ? null : <AnimatedSplash onFinish={() => setSplashDone(true)} />}
         </ThemeProvider>
       </SafeAreaProvider>
