@@ -4,7 +4,7 @@ import { NOTE_MAX_LENGTH } from '../../domain/limits';
 import { strings } from '../../strings/en';
 import { AppText, Button, Chip } from '../../ui/components';
 import { useTheme } from '../../ui/ThemeProvider';
-import { minTapTarget, radii, spacing } from '../../ui/tokens';
+import { minTapTarget, radii, spacing, typography } from '../../ui/tokens';
 import type { TodayRow } from './todayModel';
 
 const s = strings.today;
@@ -49,6 +49,7 @@ export function LogSheet({ row, note, onSave, onClear, onClose }: Props) {
   const [checked, setChecked] = useState(row.status === 'done');
   const [text, setText] = useState(note ?? '');
   const amount = isCheck ? (checked ? 1 : 0) : parseAmount(value);
+  const noteNeedsProgress = text.trim() !== '' && amount === 0;
 
   return (
     <SheetFrame title={s.logSheetTitle(row.name)} onClose={onClose}>
@@ -78,8 +79,13 @@ export function LogSheet({ row, note, onSave, onClear, onClose }: Props) {
       <AppText variant="caption" tone="secondary">
         {strings.history.noteCount(text.length)}
       </AppText>
+      {noteNeedsProgress ? (
+        <AppText variant="caption" tone="secondary">
+          {s.noteNeedsProgress}
+        </AppText>
+      ) : null}
       <View style={styles.actions}>
-        <Button label={s.save} disabled={amount === null} onPress={() => amount !== null && onSave(amount, text.trim() === '' ? null : text)} />
+        <Button label={s.save} disabled={amount === null || noteNeedsProgress} onPress={() => amount !== null && onSave(amount, text.trim() === '' ? null : text)} />
         <Button label={s.clearEntry} variant="secondary" onPress={onClear} />
       </View>
     </SheetFrame>
@@ -98,7 +104,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
   },
-  input: { minHeight: minTapTarget, borderWidth: 1, borderRadius: radii.md, paddingHorizontal: spacing.md, fontSize: 15 },
+  input: { minHeight: minTapTarget, borderWidth: 1, borderRadius: radii.md, paddingHorizontal: spacing.md, ...typography.body },
   note: { minHeight: 96, textAlignVertical: 'top', paddingVertical: spacing.sm },
   actions: { flexDirection: 'row', gap: spacing.sm },
 });

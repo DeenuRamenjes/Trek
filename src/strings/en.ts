@@ -65,6 +65,7 @@ export const strings = {
     doneToggle: 'Done',
     save: 'Save',
     clearEntry: 'Clear entry',
+    noteNeedsProgress: 'Add progress to save a note',
     closeSheet: 'Close',
     dateStrip: 'Choose day',
   },

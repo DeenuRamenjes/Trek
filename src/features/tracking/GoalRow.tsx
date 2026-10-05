@@ -114,7 +114,7 @@ export function GoalRow({ row, onPrimary, onDone, onSkip, onLog, onSlot }: Props
                   </View>
                 </View>
               </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={primary.label} onPress={onPrimary} style={[styles.primary, { backgroundColor: finished ? 'transparent' : colors.surfaceMuted }]}>
+              <Pressable accessibilityRole="button" accessibilityLabel={primary.label} onPress={onPrimary} style={[styles.primary, !finished && { backgroundColor: colors.surfaceMuted }]}>
                 {!finished && primary.icon ? <Icon name={primary.icon} size={22} color={colors.accent} /> : null}
                 {row.status === 'skipped' ? <StatusGlyph status="skipped" size={24} /> : <FinishedCheck checked={row.status === 'done'} color={colors.status.done} />}
               </Pressable>

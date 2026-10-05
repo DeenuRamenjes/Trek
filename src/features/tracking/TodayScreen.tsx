@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { onDbChanged } from '../../db/changes';
 import { useDb } from '../../db/DbProvider';
-import { useLiveGoals, useLiveLogs, useLiveVacations } from '../../db/live';
+import { useLiveGoals, useLiveLogs } from '../../db/live';
 import { endVacationNow } from '../../db/repositories';
 import { addDaysTo, parseDate } from '../../domain/dates';
 import { daysSinceBackup, showBackupBanner, snoozeUntil } from '../../domain/backupPolicy';
@@ -63,13 +63,13 @@ export function TodayScreen() {
 
   const { data: logs } = useLiveLogs();
   const { data: goals } = useLiveGoals();
-  const { data: vacationRows } = useLiveVacations();
   const list = contexts ?? [];
   const model = useMemo(() => buildTodayRows(list, logs, date, today, weekStart), [contexts, logs, date, today, weekStart]); // eslint-disable-line react-hooks/exhaustive-deps
-  const co = useCheckOff({ db, contexts: list, logs, today, weekStart });
+  const co = useCheckOff({ db, contexts: list, today, weekStart });
 
+  const activeIds = new Set(list.map((c) => c.goal.id));
   const vacation = activeVacation(
-    vacationRows.map((v) => ({ ...v, goalIds: [] })),
+    (list[0]?.vacations ?? []).filter((v) => v.scope === 'all' || v.goalIds.some((id) => activeIds.has(id))),
     today,
   );
   const earliest = goals.length ? goals.map((g) => g.createdAt).sort()[0] : null;
@@ -102,7 +102,7 @@ export function TodayScreen() {
       key={row.goalId}
       row={row}
       onPrimary={() => void primary(row)}
-      onDone={() => void co.act(row, date, { kind: 'done' })}
+      onDone={() => row.status !== 'done' && void co.act(row, date, { kind: 'done' })}
       onSkip={() => void co.act(row, date, { kind: 'skip' })}
       onLog={() => setSheet({ kind: 'log', goalId: row.goalId })}
       onSlot={(slot) => void co.act(row, date, { kind: slot.done ? 'clear' : 'done', slotId: slot.id })}

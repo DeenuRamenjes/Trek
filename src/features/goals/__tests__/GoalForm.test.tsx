@@ -109,4 +109,18 @@ describe('GoalForm', () => {
     expect(onSaved).not.toHaveBeenCalled();
     expect(await listGoals(db)).toHaveLength(0);
   });
+
+  it('shows a validation message instead of saving an invalid reminder time', async () => {
+    const db = newDb();
+    const onSaved = jest.fn();
+    await renderWithTheme(
+      <DbProvider db={db}>
+        <GoalForm initial={{ ...defaultGoalForm(), name: 'Walk', reminderEnabled: true, reminderTime: '25:99' }} onSaved={onSaved} onCancel={jest.fn()} />
+      </DbProvider>,
+    );
+    await fireEvent.press(screen.getByLabelText(f.save));
+    expect(await screen.findByText(f.errors.timeInvalid)).toBeTruthy();
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(await listGoals(db)).toHaveLength(0);
+  });
 });

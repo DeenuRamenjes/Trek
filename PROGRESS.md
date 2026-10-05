@@ -64,7 +64,7 @@
 
 ## Phase 4 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
-- `npx jest`: `Test Suites: 50 passed, 50 total`; `Tests: 497 passed, 497 total`; `Snapshots: 1 passed, 1 total`.
+- `npx jest`: `Test Suites: 50 passed, 50 total`; `Tests: 504 passed, 504 total`; `Snapshots: 1 passed, 1 total`.
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: exit 0, `Exported: dist`.
 - Same command with `--platform android`: `Exported: dist`.
 
@@ -75,7 +75,7 @@
 - `reminders.offsetMin` is stored as negative minutes-before.
 - Today: undo restores the exact previous log (deleted if none existed, else prior value, status and note). Tapping a finished row clears its logs (also undoable). A slotted check row marks or clears every slot; slot chips act on one slot.
 - Today: "Back up now" navigates to `/settings` until Phase 11. Snooze writes `backupBannerSnoozedUntil` (3 days, from `BACKUP_SNOOZE_DAYS`); the note limit comes from `NOTE_MAX_LENGTH` (`src/domain/limits.ts`).
-- Log sheet: a value of 0 clears the entry, so a note cannot be saved without progress.
+- Log sheet: Save is disabled with a hint when a note has no progress (value 0); a value of 0 without a note clears the entry. Phase 6 history sheet must allow a note with value 0 or skipped status.
 - Today loads goal contexts with `loadGoalContexts` and reloads on every `dbChanged`.
 
 ## Phase 4 device verification pending (run in Phase 13)

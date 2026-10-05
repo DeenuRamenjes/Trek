@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { TrekDb } from '../../db/client';
-import { deleteLog, upsertLog } from '../../db/repositories';
+import { deleteLog, listLogs, restoreLog, upsertLog } from '../../db/repositories';
 import type { Log } from '../../db/schema';
 import { applyAction, type ActionKind } from '../../domain/actionQueue';
 import { currentStreak, milestoneReached } from '../../domain/streaks';
@@ -19,24 +19,29 @@ export type CheckOp =
 type Entry = { prev: Log | null; created: Log | null; goalId: string; date: string; slotId: string | null };
 export type UndoState = { id: number; message: string; entries: Entry[] };
 
-type Args = { db: TrekDb; contexts: GoalContext[]; logs: Log[]; today: string; weekStart: number };
+type Args = { db: TrekDb; contexts: GoalContext[]; today: string; weekStart: number };
 
 const sameKey = (l: Pick<Log, 'goalId' | 'date' | 'slotId'>, goalId: string, date: string, slotId: string | null) =>
   l.goalId === goalId && l.date === date && (l.slotId ?? null) === slotId;
 
 /** Applies check-off operations through `applyAction`, tracks the undo state and detects streak milestones. */
-export function useCheckOff({ db, contexts, logs, today, weekStart }: Args) {
+export function useCheckOff({ db, contexts, today, weekStart }: Args) {
   const [undoState, setUndoState] = useState<UndoState | null>(null);
   const [milestone, setMilestone] = useState<{ id: number; days: number } | null>(null);
-  const logsRef = useRef(logs);
-  logsRef.current = logs;
   const counter = useRef(0);
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  /** Runs `fn` after every earlier act/undo finished, so rapid taps never read a stale log. */
+  const serial = useCallback(<T,>(fn: () => Promise<T>): Promise<T> => {
+    const next = chain.current.then(fn, fn);
+    chain.current = next.catch(() => undefined);
+    return next;
+  }, []);
 
-  const act = useCallback(
+  const run = useCallback(
     async (row: TodayRow, date: string, op: CheckOp) => {
       const ctx = contexts.find((c) => c.goal.id === row.goalId);
       if (!ctx) return;
-      const current = logsRef.current;
+      const current = await listLogs(db, { goalId: row.goalId });
       const find = (slotId: string | null) => current.find((l) => sameKey(l, row.goalId, date, slotId)) ?? null;
       const slotted = row.slots.length > 0;
       const wholeRow = op.kind === 'done' || op.kind === 'skip' || op.kind === 'clear' || op.kind === 'set';
@@ -102,25 +107,19 @@ export function useCheckOff({ db, contexts, logs, today, weekStart }: Args) {
     [db, contexts, today, weekStart],
   );
 
+  const act = useCallback((row: TodayRow, date: string, op: CheckOp) => serial(() => run(row, date, op)), [serial, run]);
+
   const undo = useCallback(async () => {
     const state = undoState;
     if (!state) return;
     setUndoState(null);
-    for (const e of [...state.entries].reverse()) {
-      if (e.prev) {
-        await upsertLog(db, {
-          goalId: e.goalId,
-          date: e.date,
-          slotId: e.slotId,
-          value: e.prev.value,
-          status: e.prev.status,
-          note: e.prev.note ?? null,
-        });
-      } else if (e.created) {
-        await deleteLog(db, e.created.id);
+    await serial(async () => {
+      for (const e of [...state.entries].reverse()) {
+        if (e.prev) await restoreLog(db, e.prev);
+        else if (e.created) await deleteLog(db, e.created.id);
       }
-    }
-  }, [db, undoState]);
+    });
+  }, [db, undoState, serial]);
 
   return {
     act,

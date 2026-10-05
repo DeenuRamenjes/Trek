@@ -16,7 +16,7 @@ export function SlotChips({ goalName, slots, onToggle }: Props) {
       {slots.map((slot) => (
         <Pressable
           key={slot.id}
-          accessibilityRole="button"
+          accessibilityRole="checkbox"
           accessibilityLabel={strings.today.toggleSlot(goalName, slot.time)}
           accessibilityState={{ checked: slot.done }}
           onPress={() => onToggle(slot)}

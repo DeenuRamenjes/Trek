@@ -293,3 +293,14 @@ describe('pendingActions', () => {
     expect((await r.listUnprocessed(db)).map((x) => x.id)).toEqual(['b']);
   });
 });
+
+describe('restoreLog', () => {
+  it('re-inserts a deleted log with its original id and timestamps', async () => {
+    const g = await r.createGoal(db, { name: 'Walk' }, TODAY);
+    const log = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 1, status: 'done', note: 'n' });
+    await r.deleteLog(db, log.id);
+    tick(60);
+    await r.restoreLog(db, log);
+    expect(await r.listLogs(db, { goalId: g.id })).toEqual([log]);
+  });
+});

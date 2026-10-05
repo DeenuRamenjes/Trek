@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import { and, asc, eq, gte, isNull, lte, or, type SQL } from 'drizzle-orm';
 import type { TrekDb } from '../client';
 import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
@@ -63,4 +63,17 @@ export async function listLogs(db: TrekDb, opts: { goalId?: string; from?: strin
     .from(logs)
     .where(conds.length ? and(...conds) : undefined)
     .orderBy(asc(logs.date), asc(logs.loggedAt));
+}
+
+/** Re-inserts `row` exactly as it was (same id, loggedAt, updatedAt), replacing any row with that id or that (goalId, date, slotId). Used by undo. */
+export async function restoreLog(db: TrekDb, row: Log): Promise<void> {
+  await withTransaction(db, async (tx) => {
+    const key = and(
+      eq(logs.goalId, row.goalId),
+      eq(logs.date, row.date),
+      row.slotId == null ? isNull(logs.slotId) : eq(logs.slotId, row.slotId),
+    );
+    await tx.delete(logs).where(or(eq(logs.id, row.id), key));
+    await tx.insert(logs).values(row);
+  });
 }

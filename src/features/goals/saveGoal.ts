@@ -131,6 +131,7 @@ export async function loadGoalFormValues(db: TrekDb, goalId: string, today: stri
   const goal = await getGoal(db, goalId);
   if (!goal) return undefined;
   const versions = await listScheduleVersions(db, goalId);
+  // listScheduleVersions is ordered by effectiveFrom, so versions[0] is the earliest (the right pick when only future versions exist).
   const current = effectiveVersion(versions, today) ?? versions[0];
   const slots = current ? await listSlots(db, current.id) : [];
   const rems = (await listReminders(db, goalId)).filter((r) => r.enabled);
