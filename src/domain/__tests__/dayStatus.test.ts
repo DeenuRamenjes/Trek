@@ -39,6 +39,17 @@ describe('dayStatus', () => {
     expect(dayStatus(nd, [log({})], D, TODAY)).toEqual({ status: 'not-due', value: 0, ratio: 0 });
   });
 
+  it('vacation only when otherwise due; else not-due', () => {
+    const range = { startDate: '2026-01-01', endDate: '2026-01-31' };
+    const we = mkCtx({ versions: [mkVersion({ scheduleType: 'weekends' })], vacations: [mkVacation(range)] });
+    expect(dayStatus(we, [], D, TODAY).status).toBe('not-due'); // Monday, not scheduled
+    expect(dayStatus(we, [], '2026-01-03', TODAY).status).toBe('vacation'); // Saturday
+    const pre = mkCtx({ goal: mkGoal({ startDate: '2026-01-06' }), vacations: [mkVacation(range)] });
+    expect(dayStatus(pre, [], D, TODAY).status).toBe('not-due');
+    const paused = mkCtx({ pauses: [mkPause({ startDate: D, endDate: D })], vacations: [mkVacation(range)] });
+    expect(dayStatus(paused, [], D, TODAY).status).toBe('not-due');
+  });
+
   it('ignores logs of other goals and dates', () => {
     const ctx = mkCtx();
     expect(dayStatus(ctx, [log({ goalId: 'other' }), log({ date: '2026-01-06' })], D, TODAY).status).toBe('missed');

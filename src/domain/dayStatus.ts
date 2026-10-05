@@ -24,8 +24,9 @@ export function slotsForDate(ctx: GoalContext, date: string): Slot[] {
 /** Computed status of one day (design 3.3). Logs of other goals or dates are ignored. */
 export function dayStatus(ctx: GoalContext, logs: Log[], date: string, today: string): DayInfo {
   const none = (status: DayStatus): DayInfo => ({ status, value: 0, ratio: 0 });
+  if (!eligibleWithoutVacation(ctx, date)) return none('not-due');
   if (vacationCovers(ctx.vacations, ctx.goal.id, date)) return none('vacation');
-  if (!eligibleWithoutVacation(ctx, date) || date > today) return none('not-due');
+  if (date > today) return none('not-due');
 
   const dayLogs = logs.filter((l) => l.goalId === ctx.goal.id && l.date === date);
   const skipped = dayLogs.some((l) => l.status === 'skipped');

@@ -57,6 +57,15 @@ describe('scoreWeek', () => {
     expect(scoreWeek(before, [], WEEK, '2026-03-01')).toMatchObject({ eligibleDays: 0, neutral: true, missed: 0 });
   });
 
+  it('caps target at available days: mid-week start', () => {
+    // starts Friday 2026-01-09: Fri, Sat, Sun eligible
+    const c = ctx({ goal: mkGoal({ startDate: '2026-01-09' }) }, 5);
+    const s = scoreWeek(c, [], WEEK, '2026-01-13');
+    expect(s.eligibleDays).toBe(3);
+    expect(s.adjustedTarget).toBe(3);
+    expect(s.missed).toBe(3);
+  });
+
   it('skipped days do not count as done', () => {
     expect(scoreWeek(ctx(), [lg('2026-01-05', 'skipped')], WEEK, '2026-01-13').doneDays).toBe(0);
   });

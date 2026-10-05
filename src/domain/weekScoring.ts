@@ -35,7 +35,7 @@ export function scoreWeek(
     ? (effectiveVersion(ctx.versions, days[days.length - 1])?.timesPerWeek ?? 0)
     : 0;
   const adjustedTarget =
-    eligibleDays > 0 && target > 0 ? Math.ceil((target * (eligibleDays - vacationDays)) / eligibleDays) : 0;
+    eligibleDays > 0 && target > 0 ? Math.min(Math.ceil((target * (eligibleDays - vacationDays)) / eligibleDays), eligibleDays - vacationDays) : 0;
   const doneDays = days.filter((d) => dayStatus(ctx, logs, d, today).status === 'done').length;
   const credited = Math.min(doneDays, adjustedTarget);
   const ended = addDaysTo(weekStartDate, 6) < today;
