@@ -1,9 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { strings } from '../../../strings/en';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { expectAllButtonsLabelled } from '../../../test/a11y';
 import { useTheme } from '../../ThemeProvider';
-import { buildColors } from '../../tokens';
+import { buildColors, minTapTarget, StatusKey } from '../../tokens';
 import { AppText, Banner, Button, Card, GoalIcon, IconButton, Screen, SegmentedControl, StatusGlyph, statusLabel } from '..';
 
 function ModeProbe() {
@@ -18,10 +19,20 @@ describe('ThemeProvider', () => {
   });
 
   it('throws when useTheme is used outside the provider', async () => {
-    jest.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(render(<ModeProbe />)).rejects.toThrow('useTheme must be used inside ThemeProvider');
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      await expect(render(<ModeProbe />)).rejects.toThrow('useTheme must be used inside ThemeProvider');
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });
+
+const STATUSES: StatusKey[] = ['done', 'partial', 'skipped', 'vacation', 'missed', 'pending', 'notDue'];
+
+function flatStyle(element: { props: { style?: unknown } }) {
+  return StyleSheet.flatten(element.props.style as never) as Record<string, unknown>;
+}
 
 describe('components', () => {
   it('Button is a labelled 44pt button and fires onPress', async () => {
@@ -30,12 +41,15 @@ describe('components', () => {
     const button = screen.getByRole('button', { name: 'Save goal' });
     await fireEvent.press(button);
     expect(onPress).toHaveBeenCalledTimes(1);
-    expectAllButtonsLabelled();
+    expect(flatStyle(button).minHeight).toBe(minTapTarget);
+    expect(expectAllButtonsLabelled()).toBe(1);
   });
 
   it('IconButton requires and exposes a label', async () => {
     await renderWithTheme(<IconButton icon="chevron-back" accessibilityLabel="Previous month" />);
-    expect(screen.getByRole('button', { name: 'Previous month' })).toBeTruthy();
+    const button = screen.getByRole('button', { name: 'Previous month' });
+    expect(flatStyle(button).width).toBe(minTapTarget);
+    expect(flatStyle(button).height).toBe(minTapTarget);
   });
 
   it('SegmentedControl marks the selected segment', async () => {
@@ -52,6 +66,8 @@ describe('components', () => {
       />,
     );
     expect(screen.getByRole('button', { name: '7D' }).props.accessibilityState).toEqual({ selected: true });
+    expect(flatStyle(screen.getByRole('button', { name: '30D' })).minHeight).toBe(minTapTarget);
+    expect(expectAllButtonsLabelled()).toBe(2);
     await fireEvent.press(screen.getByRole('button', { name: '30D' }));
     expect(onChange).toHaveBeenCalledWith('b');
   });
@@ -62,16 +78,23 @@ describe('components', () => {
     );
     expect(screen.getByText('Vacation mode is on')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'End vacation now' })).toBeTruthy();
+    expect(expectAllButtonsLabelled()).toBe(1);
   });
 
-  it('StatusGlyph renders nothing for notDue and labels exist for all statuses', async () => {
+  it.each(STATUSES)('StatusGlyph for %s renders an icon unless the status is notDue', async (status) => {
     await renderWithTheme(
-      <>
-        <StatusGlyph status="notDue" />
-        <AppText>{statusLabel('missed')}</AppText>
-      </>,
+      <View testID="glyph">
+        <StatusGlyph status={status} />
+      </View>,
     );
-    expect(screen.getByText('Missed')).toBeTruthy();
+    expect(screen.getByTestId('glyph').children).toHaveLength(status === 'notDue' ? 0 : 1);
+  });
+
+  it('statusLabel gives the strings label for every status', () => {
+    for (const status of STATUSES) {
+      expect(statusLabel(status)).toBe(strings.status[status]);
+    }
+    expect(statusLabel('missed')).toBe('Missed');
   });
 
   it('renders Screen, Card and GoalIcon in both modes', async () => {
