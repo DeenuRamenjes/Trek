@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,32 +29,31 @@ export function TabBar({ state, navigation }: TabBarProps) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const reduce = useReduceMotion();
-  const width = useSharedValue(0);
+  const [width, setWidth] = useState(0);
   const x = useSharedValue(0);
-  const count = state.routes.length;
-
-  const move = (w: number) => {
-    const target = (w / count) * state.index;
-    x.value = reduce ? target : withSpring(target, springs.snappy);
-  };
+  const first = useSharedValue(true);
+  const routes = state.routes.filter((r) => r.name in tabMeta);
+  const count = Math.max(routes.length, 1);
+  const tabWidth = width / count;
+  const focusedName = state.routes[state.index]?.name;
+  const position = Math.max(
+    routes.findIndex((r) => r.name === focusedName),
+    0,
+  );
+  const target = tabWidth * position;
 
   useEffect(() => {
-    if (width.value > 0) move(width.value);
+    if (tabWidth <= 0) return;
+    if (reduce || first.value) x.value = target;
+    else x.value = withSpring(target, springs.snappy);
+    first.value = false;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.index, reduce]);
+  }, [target, tabWidth, reduce]);
 
-  const onLayout = (e: LayoutChangeEvent) => {
-    const w = e.nativeEvent.layout.width;
-    const first = width.value === 0;
-    width.value = w;
-    if (first) x.value = (w / count) * state.index;
-    else move(w);
-  };
+  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
-  const indicator = useAnimatedStyle(() => ({
-    width: width.value / count,
-    transform: [{ translateX: x.value }],
-  }));
+  const indicator = useAnimatedStyle(() => ({ transform: [{ translateX: x.value }] }));
+  const pillWidth = Math.max(Math.min(64, tabWidth - spacing.sm), 0);
 
   return (
     <View
@@ -70,13 +69,13 @@ export function TabBar({ state, navigation }: TabBarProps) {
       <Animated.View
         testID="tab-indicator"
         pointerEvents="none"
-        style={[styles.indicator, { top: spacing.xs }, indicator]}
+        style={[styles.indicator, { width: tabWidth }, indicator]}
       >
-        <View style={[styles.pill, { backgroundColor: colors.accentMuted }]} />
+        <View style={[styles.pill, { width: pillWidth, backgroundColor: colors.accentMuted }]} />
       </Animated.View>
-      {state.routes.map((route, i) => {
+      {routes.map((route) => {
         const meta = tabMeta[route.name as keyof typeof tabMeta];
-        const focused = state.index === i;
+        const focused = route.name === focusedName;
         const color = focused ? colors.accent : colors.textSecondary;
         const onPress = () => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -105,6 +104,6 @@ export function TabBar({ state, navigation }: TabBarProps) {
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.xs },
   indicator: { position: 'absolute', left: 0, bottom: 0, paddingTop: spacing.xs, alignItems: 'center' },
-  pill: { width: 64, height: 56, borderRadius: radii.pill },
+  pill: { height: 56, borderRadius: radii.pill },
   tab: { flex: 1, minHeight: minTapTarget, alignItems: 'center', justifyContent: 'center', gap: 2, paddingVertical: spacing.xs },
 });

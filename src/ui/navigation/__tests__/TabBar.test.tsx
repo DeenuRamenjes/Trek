@@ -3,7 +3,8 @@ import { StyleSheet } from 'react-native';
 import { getAnimatedStyle } from 'react-native-reanimated';
 import { useSettings } from '../../../features/settings/settingsStore';
 import { strings } from '../../../strings/en';
-import { renderWithTheme } from '../../../test/renderWithTheme';
+import { buildColors } from '../../tokens';
+import { renderWithTheme, withTheme } from '../../../test/renderWithTheme';
 import { TabBar } from '../TabBar';
 
 const names = ['today', 'stats', 'goals', 'settings'] as const;
@@ -67,10 +68,22 @@ describe('TabBar', () => {
     }
   });
 
-  it('springs the indicator to index * tabWidth after layout', async () => {
-    const { ui } = setup(2);
-    await renderWithTheme(ui);
-    await fireEvent(screen.getByTestId('tab-bar'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 80 } } });
+  const layout = { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 80 } } };
+
+  it('springs the indicator to the new index * tabWidth', async () => {
+    useSettings.getState().update({ reduceMotionOverride: 'off' });
+    const first = setup(0);
+    const view = await renderWithTheme(first.ui);
+    await fireEvent(screen.getByTestId('tab-bar'), 'layout', layout);
+    await act(async () => {
+      jest.advanceTimersByTime(1500);
+    });
+    expect(translateX()).toBe(0);
+    await view.rerender(withTheme(setup(2).ui));
+    await act(async () => {
+      jest.advanceTimersByTime(16);
+    });
+    expect(translateX()).not.toBe(200);
     await act(async () => {
       jest.advanceTimersByTime(1500);
     });
@@ -79,12 +92,28 @@ describe('TabBar', () => {
 
   it('sets the indicator at once under reduce motion', async () => {
     useSettings.getState().update({ reduceMotionOverride: 'on' });
-    const { ui } = setup(3);
-    await renderWithTheme(ui);
-    await fireEvent(screen.getByTestId('tab-bar'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 400, height: 80 } } });
+    const view = await renderWithTheme(setup(0).ui);
+    await fireEvent(screen.getByTestId('tab-bar'), 'layout', layout);
+    await view.rerender(withTheme(setup(3).ui));
     await act(async () => {
-      jest.advanceTimersByTime(20);
+      jest.advanceTimersByTime(16);
     });
     expect(translateX()).toBe(300);
+  });
+
+  it('colours the focused label accent and the others textSecondary', async () => {
+    await renderWithTheme(setup(1).ui);
+    const colors = buildColors('light');
+    labels.forEach((label, i) => {
+      const style = StyleSheet.flatten(screen.getByText(label).props.style) as { color: string };
+      expect(style.color).toBe(i === 1 ? colors.accent : colors.textSecondary);
+    });
+  });
+
+  it('skips routes without tab metadata', async () => {
+    const { emit, navigate } = setup(0);
+    const state = { index: 0, routes: [...names, 'extra'].map((name) => ({ key: `${name}-key`, name })) };
+    await renderWithTheme(<TabBar state={state} navigation={{ emit, navigate }} />);
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
   });
 });
