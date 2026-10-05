@@ -7,6 +7,15 @@ module.exports = {
       testEnvironment: 'node',
       setupFiles: ['<rootDir>/jest.setup.js'],
       testMatch: ['<rootDir>/src/**/*.test.ts'],
+      testPathIgnorePatterns: ['/node_modules/', '\\.tz\\.test\\.ts$'],
+    },
+    {
+      displayName: 'node-tz',
+      preset: 'jest-expo',
+      testEnvironment: 'node',
+      globalSetup: '<rootDir>/jest.tz.setup.js',
+      setupFiles: ['<rootDir>/jest.setup.js'],
+      testMatch: ['<rootDir>/src/**/*.tz.test.ts'],
     },
     {
       displayName: 'app',

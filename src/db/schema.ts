@@ -32,6 +32,7 @@ export const goalScheduleVersions = sqliteTable(
     scheduleType: text('schedule_type', {
       enum: ['daily', 'weekdays', 'weekends', 'customDays', 'everyNDays', 'timesPerWeek'],
     }).notNull(),
+    // ISO bitmask: bit 0 = Monday … bit 6 = Sunday.
     scheduleDays: integer('schedule_days').notNull(),
     everyNDays: integer('every_n_days'),
     timesPerWeek: integer('times_per_week'),

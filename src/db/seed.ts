@@ -45,12 +45,13 @@ type GoalSpec = {
   slots?: { weekdays: number[]; time: string; label: string }[];
 };
 
+/** ISO weekday bits: bit 0 = Monday … bit 6 = Sunday. */
 const bit = (...days: number[]) => days.reduce((m, d) => m | (1 << d), 0);
 const ALL = 127;
-const WEEKDAYS = bit(1, 2, 3, 4, 5);
-const WEEKEND = bit(0, 6);
+const WEEKDAYS = bit(0, 1, 2, 3, 4);
+const WEEKEND = bit(5, 6);
 
-const weekdayOf = (date: string) => new Date(`${date}T00:00:00Z`).getUTCDay();
+const weekdayOf = (date: string) => (new Date(`${date}T00:00:00Z`).getUTCDay() + 6) % 7;
 const dayNumber = (date: string) => Date.parse(`${date}T00:00:00Z`) / 86400000;
 const yearsBack = (date: string, years: number) => {
   const y = Number(date.slice(0, 4)) - years;
@@ -83,8 +84,8 @@ export async function seedDemoData(db: TrekDb, opts: SeedOptions): Promise<void>
     {
       key: 'workout', name: 'Workout', icon: 'barbell', color: '#C2410C', tracking: 'check', target: 1, start: start3y,
       versions: [
-        { from: start3y, type: 'customDays', mask: bit(1, 3, 5) },
-        { from: ago(200), type: 'customDays', mask: bit(1, 2, 4, 5) },
+        { from: start3y, type: 'customDays', mask: bit(0, 2, 4) },
+        { from: ago(200), type: 'customDays', mask: bit(0, 1, 3, 4) },
       ],
     },
     {
@@ -106,13 +107,13 @@ export async function seedDemoData(db: TrekDb, opts: SeedOptions): Promise<void>
       key: 'vitamins', name: 'Vitamins', icon: 'medkit', color: '#BE185D', tracking: 'check', target: 1, start: ago(900),
       versions: [{ from: ago(900), type: 'weekdays', mask: WEEKDAYS }],
       slots: [
-        { weekdays: [1, 2, 3, 4, 5], time: '08:00', label: 'Morning' },
-        { weekdays: [1, 2, 3, 4, 5], time: '20:00', label: 'Evening' },
+        { weekdays: [0, 1, 2, 3, 4], time: '08:00', label: 'Morning' },
+        { weekdays: [0, 1, 2, 3, 4], time: '20:00', label: 'Evening' },
       ],
     },
     { key: 'journal', name: 'Journal', icon: 'heart', color: '#B45309', tracking: 'check', target: 1, start: ago(800), versions: [{ from: ago(800), type: 'weekdays', mask: WEEKDAYS }] },
     { key: 'walk', name: 'Long walk', icon: 'walk', color: '#15803D', tracking: 'duration', target: 60, unit: 'min', start: start3y, versions: [{ from: start3y, type: 'weekends', mask: WEEKEND }] },
-    { key: 'stretch', name: 'Stretch', icon: 'fitness', color: '#4338CA', tracking: 'duration', target: 15, unit: 'min', start: ago(1000), versions: [{ from: ago(1000), type: 'customDays', mask: bit(2, 4, 6) }] },
+    { key: 'stretch', name: 'Stretch', icon: 'fitness', color: '#4338CA', tracking: 'duration', target: 15, unit: 'min', start: ago(1000), versions: [{ from: ago(1000), type: 'customDays', mask: bit(1, 3, 5) }] },
     { key: 'clean', name: 'Clean room', icon: 'nutrition', color: '#475569', tracking: 'check', target: 1, start: start3y, versions: [{ from: start3y, type: 'everyNDays', mask: ALL, everyN: 3 }] },
     { key: 'save', name: 'Save money', icon: 'footsteps', color: '#047857', tracking: 'value', target: 20, unit: 'USD', start: ago(500), versions: [{ from: ago(500), type: 'everyNDays', mask: ALL, everyN: 2 }] },
     {
@@ -215,9 +216,9 @@ export async function seedDemoData(db: TrekDb, opts: SeedOptions): Promise<void>
     }
   };
   remindAt('water', [0, 1, 2, 3, 4, 5, 6], '10:00');
-  remindAt('workout', [1, 2, 4, 5], '18:00');
+  remindAt('workout', [0, 1, 3, 4], '18:00');
   remindAt('meditation', [0, 1, 2, 3, 4, 5, 6], '07:00', '07:00');
-  remindAt('reading', [1, 2, 3, 4, 5], '20:30');
+  remindAt('reading', [0, 1, 2, 3, 4], '20:30');
 
   const vacationRanges = vacationSpecs.map((v) => ({
     ...v,
