@@ -2,6 +2,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import type { TrekDb } from '../client';
 import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
+import { blankToNull } from '../text';
 import { goalScheduleVersions, goalSlots, logs, type ScheduleVersion, type Slot } from '../schema';
 
 export type ScheduleVersionInput = Pick<ScheduleVersion, 'scheduleType' | 'scheduleDays'> &
@@ -52,7 +53,7 @@ export async function addScheduleVersionTx(
   });
   for (const s of slots) {
     const slotId = newId();
-    await tx.insert(goalSlots).values({ id: slotId, scheduleVersionId: id, weekday: s.weekday, time: s.time, label: s.label ?? null });
+    await tx.insert(goalSlots).values({ id: slotId, scheduleVersionId: id, weekday: s.weekday, time: s.time, label: blankToNull(s.label) });
     // A replaced same-day version must not orphan logs: carry them to the slot with the same weekday and time.
     for (const old of oldSlots.filter((o) => o.weekday === s.weekday && o.time === s.time)) {
       await tx.update(logs).set({ slotId }).where(and(eq(logs.goalId, goalId), eq(logs.slotId, old.id)));

@@ -3,6 +3,7 @@ import type { TrekDb } from '../client';
 import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
+import { blankToNull } from '../text';
 import { logs, type Log } from '../schema';
 
 export type LogInput = {
@@ -33,7 +34,7 @@ export async function upsertLogTx(tx: TrekDb, input: LogInput): Promise<Log> {
     if (existing) {
       await tx
         .update(logs)
-        .set({ value: input.value, status: input.status, note: input.note === undefined ? existing.note : input.note, updatedAt: now })
+        .set({ value: input.value, status: input.status, note: input.note === undefined ? existing.note : blankToNull(input.note), updatedAt: now })
         .where(eq(logs.id, existing.id));
       return (await tx.select().from(logs).where(eq(logs.id, existing.id)))[0];
     }
@@ -45,7 +46,7 @@ export async function upsertLogTx(tx: TrekDb, input: LogInput): Promise<Log> {
       slotId,
       value: input.value,
       status: input.status,
-      note: input.note ?? null,
+      note: blankToNull(input.note),
       loggedAt: now,
       updatedAt: now,
     });

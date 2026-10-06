@@ -304,3 +304,24 @@ describe('restoreLog', () => {
     expect(await r.listLogs(db, { goalId: g.id })).toEqual([log]);
   });
 });
+
+describe('empty optional text is stored as null', () => {
+  it('normalizes unit, note, slot label and vacation note', async () => {
+    const g = await r.createGoal(db, { name: 'A', unit: '' }, TODAY);
+    expect(g.unit).toBeNull();
+    await r.updateGoal(db, g.id, { unit: 'km' });
+    await r.updateGoal(db, g.id, { unit: '' });
+    expect((await r.getGoal(db, g.id))!.unit).toBeNull();
+    const first = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 1, status: 'done', note: '' });
+    expect(first.note).toBeNull();
+    const second = await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 1, status: 'done', note: 'x' });
+    expect((await r.upsertLog(db, { goalId: g.id, date: TODAY, value: 1, status: 'done', note: '' })).note).toBeNull();
+    expect(second.note).toBe('x');
+    await r.addScheduleVersion(db, g.id, TODAY, { scheduleType: 'daily', scheduleDays: 127 }, [{ weekday: 0, time: '07:00', label: '' }]);
+    expect((raw.prepare('SELECT label FROM goal_slots').get() as { label: string | null }).label).toBeNull();
+    const v = await r.createVacation(db, { startDate: TODAY, endDate: TODAY, scope: 'all', note: '' });
+    expect(v.note).toBeNull();
+    await r.updateVacation(db, v.id, { note: '' });
+    expect((await r.listVacations(db))[0]!.note).toBeNull();
+  });
+});

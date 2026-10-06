@@ -3,6 +3,7 @@ import type { TrekDb } from '../client';
 import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
 import { newId, nowIso } from '../ids';
+import { blankToNull } from '../text';
 import { goalScheduleVersions, goalSlots, goals, reminders, type Goal } from '../schema';
 
 export type GoalInput = {
@@ -28,6 +29,7 @@ export async function createGoalTx(tx: TrekDb, input: GoalInput, today: string):
   const id = newId();
   const startDate = input.startDate ?? today;
   const defined = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined));
+  if ('unit' in defined) defined.unit = blankToNull(defined.unit as string | null);
   await tx.insert(goals).values({ ...defined, name: input.name, id, startDate, createdAt: now, updatedAt: now });
   await tx.insert(goalScheduleVersions).values({
     id: newId(),
@@ -43,7 +45,8 @@ export async function createGoalTx(tx: TrekDb, input: GoalInput, today: string):
 
 /** updateGoal without the change event; call only inside an open withTransaction (which emits on commit). */
 export async function updateGoalTx(tx: TrekDb, id: string, patch: Partial<Omit<Goal, 'id' | 'createdAt'>>): Promise<void> {
-  await tx.update(goals).set({ ...patch, updatedAt: nowIso() }).where(eq(goals.id, id));
+  const clean = 'unit' in patch ? { ...patch, unit: blankToNull(patch.unit) } : patch;
+  await tx.update(goals).set({ ...clean, updatedAt: nowIso() }).where(eq(goals.id, id));
 }
 
 export async function updateGoal(db: TrekDb, id: string, patch: Partial<Omit<Goal, 'id' | 'createdAt'>>): Promise<void> {

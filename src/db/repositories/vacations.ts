@@ -4,6 +4,7 @@ import { emitDbChanged } from '../changes';
 import { withTransaction } from '../transaction';
 import { addDaysToDate } from '../dates';
 import { newId, nowIso } from '../ids';
+import { blankToNull } from '../text';
 import { vacationGoals, vacations, type Vacation } from '../schema';
 
 export type VacationInput = {
@@ -29,7 +30,7 @@ export async function createVacation(db: TrekDb, input: VacationInput): Promise<
       startDate: input.startDate,
       endDate: input.endDate,
       scope: input.scope,
-      note: input.note ?? null,
+      note: blankToNull(input.note),
       createdAt: now,
       updatedAt: now,
     });
@@ -41,7 +42,7 @@ export async function createVacation(db: TrekDb, input: VacationInput): Promise<
 export async function updateVacation(db: TrekDb, id: string, patch: Partial<VacationInput>): Promise<void> {
   const { goalIds, ...rest } = patch;
   await withTransaction(db, async (tx) => {
-    await tx.update(vacations).set({ ...rest, updatedAt: nowIso() }).where(eq(vacations.id, id));
+    await tx.update(vacations).set({ ...('note' in rest ? { ...rest, note: blankToNull(rest.note) } : rest), updatedAt: nowIso() }).where(eq(vacations.id, id));
     if (patch.scope === 'all') await writeGoalIds(tx, id, []);
     else if (goalIds) await writeGoalIds(tx, id, goalIds);
   });
