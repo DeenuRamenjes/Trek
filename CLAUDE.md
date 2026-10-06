@@ -15,7 +15,7 @@ Re-read this file at the start of every session. Keep `PROGRESS.md` updated (see
   react-native-reanimated (v4), react-native-gesture-handler, @shopify/react-native-skia, victory-native, expo-haptics, expo-splash-screen,
   expo-local-authentication, expo-widgets (iOS), react-native-android-widget (Android),
   jest, @testing-library/react-native.
-- Implied peers and tooling (approved): react-native-worklets, react-native-nitro-modules, react-native-screens, react-native-safe-area-context, expo-linking, expo-constants, expo-task-manager, expo-dev-client, test-renderer, typescript, @types/react, @types/jest, jest-expo, babel-plugin-inline-import, expo-crypto, expo-system-ui, expo-status-bar, expo-font, @expo/vector-icons, expo-blur.
+- Implied peers and tooling (approved): react-native-worklets, react-native-nitro-modules, react-native-screens, react-native-safe-area-context, expo-linking, expo-constants, expo-task-manager, expo-dev-client, test-renderer, typescript, @types/react, @types/jest, jest-expo, babel-plugin-inline-import, expo-crypto, expo-system-ui, expo-status-bar, expo-font, @expo/vector-icons, expo-blur, @expo/ui (dependency of expo-widgets, used only in the iOS widget definition).
 - NEVER install framer-motion. It is web-only. "Framer Motion-style" in this spec means the `from`/`animate`/`exit`/`transition` props of the `src/ui/motion` primitives, implemented on Reanimated 4. Moti is not used because it depends on framer-motion.
 - STOP and ask before:
   - adding any other dependency;
