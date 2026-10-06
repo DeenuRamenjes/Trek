@@ -61,7 +61,7 @@ export async function deleteLogTx(tx: TrekDb, id: string): Promise<void> {
 
 export async function deleteLog(db: TrekDb, id: string): Promise<void> {
   await db.delete(logs).where(eq(logs.id, id));
-  emitDbChanged();
+  emitDbChanged('logs');
 }
 
 export async function listLogs(db: TrekDb, opts: { goalId?: string; from?: string; to?: string } = {}): Promise<Log[]> {

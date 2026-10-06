@@ -1,16 +1,13 @@
-import { addDaysTo } from '../../domain/dates';
 import {
-  bestWeekday,
-  completion,
-  dailySeries,
-  perGoal,
+  goalLogsByDate,
+  indexLogs,
   rangeBounds,
-  weeklyBars,
+  statsBundle,
   type StatsMode,
   type StatsRange,
 } from '../../domain/statsCalculator';
 import { effectiveVersion } from '../../domain/scheduleEngine';
-import { bestStreak, currentStreak } from '../../domain/streaks';
+import { streaksFromIndex } from '../../domain/streaks';
 import type { GoalContext, Log } from '../../domain/types';
 
 export type StatsModel = {
@@ -47,19 +44,6 @@ export type StatsInput = {
   weekStart: number;
 };
 
-function maxStreak(ctxs: GoalContext[], streak: (c: GoalContext) => number, today: string): { value: number; unit: StreakUnit } {
-  let value = 0;
-  let unit: StreakUnit = 'days';
-  for (const c of ctxs) {
-    const n = streak(c);
-    if (n > value) {
-      value = n;
-      unit = effectiveVersion(c.versions, today)?.scheduleType === 'timesPerWeek' ? 'weeks' : 'days';
-    }
-  }
-  return { value, unit };
-}
-
 export function buildStatsModel(input: StatsInput): StatsModel {
   const { logs, range, mode, today, weekStart } = input;
   const ids = input.goalIds ? new Set(input.goalIds) : null;
@@ -67,36 +51,49 @@ export function buildStatsModel(input: StatsInput): StatsModel {
   const earliest = ctxs.reduce((min, c) => (c.goal.startDate < min ? c.goal.startDate : min), today);
   const { from, to } = rangeBounds(range, today, earliest);
 
-  const c = completion(ctxs, logs, from, to, today, mode, weekStart);
-  const heat = dailySeries(ctxs, logs, from, to, today, mode, weekStart);
+  const index = indexLogs(logs);
+  const b = statsBundle(ctxs, index, from, to, today, mode, weekStart);
 
-  // Rolling 7-day trend needs six days of lead-in before `from`.
-  const lead = dailySeries(ctxs, logs, addDaysTo(from, -6), to, today, mode, weekStart);
-  const trend = lead.slice(6).map((_, i) => {
+  // Rolling 7-day trend: lead holds six days of lead-in before `from`.
+  const trend = b.daily.map((_, i) => {
     let credit = 0;
     let denominator = 0;
-    for (const p of lead.slice(i, i + 7)) {
-      credit += p.credit;
-      denominator += p.denominator;
+    for (let k = i; k < i + 7; k++) {
+      credit += b.lead[k].credit;
+      denominator += b.lead[k].denominator;
     }
-    return { date: lead[i + 6].date, percent: denominator > 0 ? (credit / denominator) * 100 : null };
+    return { date: b.lead[i + 6].date, percent: denominator > 0 ? (credit / denominator) * 100 : null };
   });
 
-  const cur = maxStreak(ctxs, (x) => currentStreak(x, logs, today, weekStart), today);
-  const best = maxStreak(ctxs, (x) => bestStreak(x, logs, today, weekStart), today);
-  const byGoal = perGoal(ctxs, logs, from, to, today, mode, weekStart);
+  let curValue = 0;
+  let curUnit: StreakUnit = 'days';
+  let bestValue = 0;
+  let bestUnit: StreakUnit = 'days';
+  for (const c of ctxs) {
+    const { current, best } = streaksFromIndex(c, goalLogsByDate(index, c.goal.id), today, weekStart);
+    const unit: StreakUnit = effectiveVersion(c.versions, today)?.scheduleType === 'timesPerWeek' ? 'weeks' : 'days';
+    if (current > curValue) {
+      curValue = current;
+      curUnit = unit;
+    }
+    if (best > bestValue) {
+      bestValue = best;
+      bestUnit = unit;
+    }
+  }
 
+  const c = b.completion;
   return {
     range: { from, to },
     completion: { percent: c.percent, done: c.done, partial: c.partial, skipped: c.skipped, vacation: c.vacation, missed: c.missed },
-    currentStreak: cur.value,
-    bestStreak: best.value,
-    currentStreakUnit: cur.unit,
-    bestStreakUnit: best.unit,
-    heatmap: heat.map((p) => ({ date: p.date, ratio: p.denominator > 0 ? p.credit / p.denominator : null, vacation: p.denominator === 0 && p.vacation > 0 })),
-    weekly: weeklyBars(ctxs, logs, from, to, today, mode, weekStart).map((b) => ({ weekStart: b.weekStart, percent: b.percent })),
+    currentStreak: curValue,
+    bestStreak: bestValue,
+    currentStreakUnit: curUnit,
+    bestStreakUnit: bestUnit,
+    heatmap: b.daily.map((p) => ({ date: p.date, ratio: p.denominator > 0 ? p.credit / p.denominator : null, vacation: p.denominator === 0 && p.vacation > 0 })),
+    weekly: b.weekly.map((w) => ({ weekStart: w.weekStart, percent: w.percent })),
     trend,
-    perGoal: ctxs.map((x, i) => ({ goalId: x.goal.id, name: x.goal.name, color: x.goal.color, percent: byGoal[i].percent })),
-    bestWeekday: bestWeekday(ctxs, logs, from, to, today, mode, weekStart).best,
+    perGoal: ctxs.map((x, i) => ({ goalId: x.goal.id, name: x.goal.name, color: x.goal.color, percent: b.perGoal[i].percent })),
+    bestWeekday: b.bestWeekday.best,
   };
 }

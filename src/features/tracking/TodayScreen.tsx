@@ -55,7 +55,9 @@ export function TodayScreen() {
         logCatch('today.load'),
       );
     void load();
-    const off = onDbChanged(() => void load());
+    const off = onDbChanged((scope) => {
+      if (scope !== 'logs') void load();
+    });
     return () => {
       alive = false;
       off();

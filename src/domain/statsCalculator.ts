@@ -46,9 +46,33 @@ function percentOf(credit: number, denominator: number): number {
 }
 
 /** Scored units of one goal in [from, to]. Single source for every stat below. */
+/** Logs bucketed once by goal id, then by date. */
+export type LogIndex = Map<string, Map<string, Log[]>>;
+
+export function indexLogs(logs: Log[]): LogIndex {
+  const index: LogIndex = new Map();
+  for (const l of logs) {
+    let byDate = index.get(l.goalId);
+    if (!byDate) {
+      byDate = new Map();
+      index.set(l.goalId, byDate);
+    }
+    const arr = byDate.get(l.date);
+    if (arr) arr.push(l);
+    else byDate.set(l.date, [l]);
+  }
+  return index;
+}
+
+const NO_LOGS: Map<string, Log[]> = new Map();
+
+export function goalLogsByDate(index: LogIndex, goalId: string): Map<string, Log[]> {
+  return index.get(goalId) ?? NO_LOGS;
+}
+
 function goalUnits(
   ctx: GoalContext,
-  allLogs: Log[],
+  index: LogIndex,
   from: string,
   to: string,
   today: string,
@@ -56,13 +80,7 @@ function goalUnits(
   weekStart: number,
 ): Unit[] {
   const goalId = ctx.goal.id;
-  const byDate = new Map<string, Log[]>();
-  for (const l of allLogs) {
-    if (l.goalId !== goalId) continue;
-    const arr = byDate.get(l.date);
-    if (arr) arr.push(l);
-    else byDate.set(l.date, [l]);
-  }
+  const byDate = goalLogsByDate(index, goalId);
   const base = { goalId, weekly: false, credit: 0, denominator: 0, done: 0, partial: 0, skipped: 0, vacation: 0, missed: 0 };
   const units: Unit[] = [];
   const last = to < today ? to : today;
@@ -116,7 +134,8 @@ function allUnits(
   mode: StatsMode,
   weekStart: number,
 ): Unit[] {
-  return ctxs.flatMap((c) => goalUnits(c, logs, from, to, today, mode, weekStart));
+  const index = indexLogs(logs);
+  return ctxs.flatMap((c) => goalUnits(c, index, from, to, today, mode, weekStart));
 }
 
 function sum(units: Unit[]): Completion {
@@ -216,7 +235,8 @@ export function perGoal(
   mode: StatsMode,
   weekStart = 1,
 ): GoalStat[] {
-  return ctxs.map((c) => ({ goalId: c.goal.id, ...sum(goalUnits(c, logs, from, to, today, mode, weekStart)) }));
+  const index = indexLogs(logs);
+  return ctxs.map((c) => ({ goalId: c.goal.id, ...sum(goalUnits(c, index, from, to, today, mode, weekStart)) }));
 }
 
 export type WeekdayStats = {
@@ -265,4 +285,79 @@ export function skippedByWeekday(
     if (!u.weekly && u.skipped) out[isoWeekday(u.date)] += u.skipped;
   }
   return out;
+}
+
+export type StatsBundle = {
+  completion: Completion;
+  daily: DailyPoint[];
+  /** Daily points for [from - 6, to], for the rolling 7-day trend. */
+  lead: DailyPoint[];
+  weekly: WeekBar[];
+  perGoal: GoalStat[];
+  bestWeekday: WeekdayStats;
+};
+
+/**
+ * Everything the Stats tab needs, from one scoring pass per goal over [from - 6, to].
+ * Equivalent to calling completion, dailySeries (twice), weeklyBars, perGoal and bestWeekday.
+ */
+export function statsBundle(
+  ctxs: GoalContext[],
+  index: LogIndex,
+  from: string,
+  to: string,
+  today: string,
+  mode: StatsMode,
+  weekStart = 1,
+): StatsBundle {
+  const leadFrom = addDaysTo(from, -6);
+  const inRange: Unit[] = [];
+  const goalStats: GoalStat[] = [];
+  const leadMap = new Map<string, { credit: number; denominator: number; vacation: number }>();
+  for (const c of ctxs) {
+    const mine: Unit[] = [];
+    for (const u of goalUnits(c, index, leadFrom, to, today, mode, weekStart)) {
+      const p = leadMap.get(u.date) ?? { credit: 0, denominator: 0, vacation: 0 };
+      p.credit += u.credit;
+      p.denominator += u.denominator;
+      p.vacation += u.vacation;
+      leadMap.set(u.date, p);
+      if (u.date >= from) mine.push(u);
+    }
+    for (const u of mine) inRange.push(u);
+    goalStats.push({ goalId: c.goal.id, ...sum(mine) });
+  }
+  const series = (start: string): DailyPoint[] =>
+    eachDate(start, to).map((date) => {
+      const p = leadMap.get(date) ?? { credit: 0, denominator: 0, vacation: 0 };
+      return { date, credit: p.credit, denominator: p.denominator, percent: percentOf(p.credit, p.denominator), vacation: p.vacation };
+    });
+  const lead = series(leadFrom);
+  const daily = lead.slice(6);
+
+  const bars = new Map<string, WeekBar>();
+  for (let ws = weekStartOf(from, weekStart); ws <= to; ws = addDaysTo(ws, 7)) {
+    bars.set(ws, { weekStart: ws, credit: 0, denominator: 0, percent: 0 });
+  }
+  const byWeekday = Array.from({ length: 7 }, (_, weekday) => ({ weekday, credit: 0, denominator: 0, percent: 0 }));
+  for (const u of inRange) {
+    const b = bars.get(weekStartOf(u.date, weekStart));
+    if (b) {
+      b.credit += u.credit;
+      b.denominator += u.denominator;
+    }
+    if (!u.weekly) {
+      const w = byWeekday[isoWeekday(u.date)];
+      w.credit += u.credit;
+      w.denominator += u.denominator;
+    }
+  }
+  const weekly = [...bars.values()];
+  for (const b of weekly) b.percent = percentOf(b.credit, b.denominator);
+  let best: number | null = null;
+  for (const w of byWeekday) {
+    w.percent = percentOf(w.credit, w.denominator);
+    if (w.denominator > 0 && (best === null || w.percent > byWeekday[best].percent)) best = w.weekday;
+  }
+  return { completion: sum(inRange), daily, lead, weekly, perGoal: goalStats, bestWeekday: { byWeekday, best } };
 }

@@ -96,3 +96,23 @@ describe('series and breakdowns', () => {
     expect(bestWeekday([a], [], '2026-01-10', '2026-01-10', '2026-01-10', 'weighted').best).toBeNull();
   });
 });
+
+describe('statsBundle', () => {
+  it('matches the individual calculators', () => {
+    const { statsBundle, indexLogs, completion, dailySeries, weeklyBars, perGoal, bestWeekday } = jest.requireActual('../statsCalculator');
+    const { mkCtx, mkGoal, mkLog, mkVersion } = jest.requireActual('./fixtures');
+    const a = mkCtx({ goal: mkGoal({ id: 'a', name: 'A', trackingType: 'count', targetValue: 10 }), versions: [mkVersion({ id: 'va', goalId: 'a' })] });
+    const b = mkCtx({ goal: mkGoal({ id: 'b', name: 'B' }), versions: [mkVersion({ id: 'vb', goalId: 'b' })] });
+    const logs = [mkLog({ date: '2026-01-05', goalId: 'a', value: 10 }), mkLog({ date: '2026-01-06', goalId: 'a', value: 4 }), mkLog({ date: '2026-01-07', goalId: 'b' })];
+    const from = '2026-01-03';
+    const to = '2026-01-14';
+    const today = '2026-01-14';
+    const r = statsBundle([a, b], indexLogs(logs), from, to, today, 'weighted', 1);
+    expect(r.completion).toEqual(completion([a, b], logs, from, to, today, 'weighted', 1));
+    expect(r.daily).toEqual(dailySeries([a, b], logs, from, to, today, 'weighted', 1));
+    expect(r.lead).toEqual(dailySeries([a, b], logs, '2025-12-28', to, today, 'weighted', 1));
+    expect(r.weekly).toEqual(weeklyBars([a, b], logs, from, to, today, 'weighted', 1));
+    expect(r.perGoal).toEqual(perGoal([a, b], logs, from, to, today, 'weighted', 1));
+    expect(r.bestWeekday).toEqual(bestWeekday([a, b], logs, from, to, today, 'weighted', 1));
+  });
+});
