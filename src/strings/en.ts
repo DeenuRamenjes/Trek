@@ -85,6 +85,18 @@ export const strings = {
     closeSheet: 'Close',
     dateStrip: 'Choose day',
   },
+  widgetSettings: {
+    title: 'Widget',
+    group: 'Group shown on the widget',
+    hideNames: 'Hide goal names',
+    hideNamesLabel: 'Hide goal names on the widget',
+    hideNamesHelp: 'The widget shows progress only, so goals stay private on the home screen.',
+    preview: 'Preview',
+    hiddenName: 'Goal',
+    empty: 'Nothing due today',
+    count: (done: number, total: number) => `${done}/${total}`,
+    previewLabel: (done: number, total: number) => `Widget preview: ${done} of ${total} done`,
+  },
   stats: {
     title: 'Stats',
     allGoals: 'All goals',

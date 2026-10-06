@@ -32,6 +32,13 @@ export default function SettingsScreen() {
         />
         <Button
           variant="secondary"
+          label={strings.settings.widget}
+          icon="apps-outline"
+          accessibilityLabel={strings.settings.open(strings.settings.widget)}
+          onPress={() => router.push('/settings/widget')}
+        />
+        <Button
+          variant="secondary"
           label={strings.settings.backup}
           icon="cloud-upload-outline"
           accessibilityLabel={strings.settings.open(strings.settings.backup)}

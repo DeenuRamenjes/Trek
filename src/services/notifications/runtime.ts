@@ -1,7 +1,7 @@
 import { getDb, type TrekDb } from '../../db/client';
 import { useSettings } from '../../features/settings/settingsStore';
 import { onActionsApplied, processPendingActions } from '../actionQueueProcessor';
-import { refreshWidgets } from '../widgetBridge';
+import { importWidgetActions, refreshWidgets } from '../widgetBridge';
 import { notificationsAdapter } from './adapter';
 import { coalesce, createLifecycle } from './lifecycle';
 import { reconcile } from './reconciler';
@@ -21,8 +21,9 @@ onActionsApplied(() => {
 /** Wires the lifecycle to the real db, settings store and adapter. */
 export function createRuntimeLifecycle(debounceMs?: number) {
   return createLifecycle({
-    processActions: () => {
+    processActions: async () => {
       const db: TrekDb = getDb();
+      await importWidgetActions().catch(() => undefined);
       return processPendingActions(db);
     },
     reconcile: reconcileSerialized,

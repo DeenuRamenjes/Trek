@@ -12,6 +12,7 @@ import { strings } from '../src/strings/en';
 import { AppText, Screen } from '../src/ui/components';
 import { useAppReady } from '../src/features/startup/useAppReady';
 import { LockGate } from '../src/features/security/LockGate';
+import { useWidgetSync } from '../src/features/widgets/useWidgetSync';
 import { PrivacyOverlay } from '../src/features/security/PrivacyOverlay';
 import { useSettings } from '../src/features/settings/settingsStore';
 import { MotionConfig, useReduceMotion } from '../src/ui/motion';
@@ -24,6 +25,7 @@ void SplashScreen.preventAutoHideAsync();
 function NotificationsLifecycle() {
   useNotificationsLifecycle();
   useAutoBackup();
+  useWidgetSync();
   return null;
 }
 
