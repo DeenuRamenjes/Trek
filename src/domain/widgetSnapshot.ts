@@ -15,6 +15,8 @@ export type WidgetItem = {
   status: WidgetItemStatus;
   /** 0..1 */
   progress: number;
+  /** True for count goals: a tap increments instead of marking done. */
+  increment: boolean;
 };
 
 export type WidgetSnapshot = {
@@ -48,6 +50,7 @@ export function buildWidgetSnapshot(input: WidgetSnapshotInput): WidgetSnapshot 
       name: input.hideGoalNames ? null : ctx.goal.name,
       status: info.status,
       progress: info.status === 'done' ? 1 : info.ratio,
+      increment: ctx.goal.trackingType === 'count',
       sort: ctx.goal.sortOrder,
     });
   }

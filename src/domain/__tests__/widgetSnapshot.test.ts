@@ -12,8 +12,8 @@ describe('buildWidgetSnapshot', () => {
     expect(snap).toEqual({
       date: today, done: 1, total: 2,
       items: [
-        { goalId: 'b', name: 'Goal b', status: 'pending', progress: 0 },
-        { goalId: 'a', name: 'Goal a', status: 'done', progress: 1 },
+        { goalId: 'b', name: 'Goal b', status: 'pending', progress: 0, increment: false },
+        { goalId: 'a', name: 'Goal a', status: 'done', progress: 1, increment: false },
       ],
     });
   });

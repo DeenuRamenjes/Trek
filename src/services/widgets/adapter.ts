@@ -42,7 +42,7 @@ export type WidgetsAdapter = {
 };
 
 type IosLayout = (props: WidgetPayload, environment: unknown) => import('react').JSX.Element;
-type AndroidRender = (payload: WidgetPayload) => import('react').JSX.Element;
+type AndroidRender = (payload: WidgetPayload, widthDp: number) => import('react').JSX.Element | { light: import('react').JSX.Element; dark: import('react').JSX.Element | null };
 
 let iosLayout: IosLayout | null = null;
 let androidRender: AndroidRender | null = null;
@@ -78,7 +78,7 @@ export const widgetsAdapter: WidgetsAdapter = {
       const { requestWidgetUpdate } = require('react-native-android-widget');
       await requestWidgetUpdate({
         widgetName: TREK_WIDGET_NAME,
-        renderWidget: () => render(payload),
+        renderWidget: (info: { width: number }) => render(payload, info.width),
         widgetNotFound: () => undefined,
       });
     }

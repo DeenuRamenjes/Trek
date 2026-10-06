@@ -96,6 +96,10 @@ export const strings = {
     empty: 'Nothing due today',
     count: (done: number, total: number) => `${done}/${total}`,
     previewLabel: (done: number, total: number) => `Widget preview: ${done} of ${total} done`,
+    widgetName: 'Trek',
+    widgetDescription: 'Today\'s goals with progress. Tap a goal to mark it done.',
+    rowLabel: (name: string, percent: number) => `${name}, ${percent} percent`,
+    rowLabelHidden: (percent: number) => `Goal, ${percent} percent`,
   },
   stats: {
     title: 'Stats',

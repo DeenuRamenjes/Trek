@@ -49,7 +49,56 @@
           "faceIDPermission": "Trek uses Face ID to unlock the app."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.deenuramenjes.trek.widget",
+          "groupIdentifier": "group.com.deenuramenjes.trek",
+          "enablePushNotifications": false,
+          "frequentUpdates": false,
+          "enableAndroid": false,
+          "widgets": [
+            {
+              "name": "TrekWidget",
+              "displayName": "Trek",
+              "description": "Today's goals with progress. Tap a goal to mark it done.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium"
+              ],
+              "contentMarginsDisabled": false,
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ],
+                "contentMarginsDisabled": false
+              }
+            }
+          ]
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "TrekWidget",
+              "label": "Trek",
+              "description": "Today's goals with progress. Tap a goal to mark it done.",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 2,
+              "targetCellHeight": 2,
+              "maxResizeWidth": "320dp",
+              "maxResizeHeight": "160dp",
+              "resizeMode": "horizontal|vertical",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": false
