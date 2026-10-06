@@ -9,7 +9,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.deenuramenjes.trek",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "UIFileSharingEnabled": true,
+        "LSSupportsOpeningDocumentsInPlace": true
+      }
     },
     "android": {
       "package": "com.deenuramenjes.trek",

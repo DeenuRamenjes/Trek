@@ -192,6 +192,33 @@ These review notes were deferred to the phase that builds on the affected code. 
   - Extend the emoji scan to accessibility labels and placeholders.
   - Optional color tests: a positive large-text AA case, tone 99 and `toneOf` at 0 and 100, and a mid-grey `readableOn` case.
 
+## Phase 11 verification (run on 2026-10-06)
+- `npx tsc --noEmit`: exit 0, no errors.
+- `npx jest`: Test Suites: 81 passed, 81 total; Tests: 732 passed, 732 total.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: `_expo/static/js/ios/entry-1516b2382a352183f5a47679e84f3339.hbc (8.8MB)`, Exported: dist.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: `_expo/static/js/android/entry-27a2e86ce4820fff0cca451852ec8ab0.hbc (9MB)`, Exported: dist.
+- Round-trip tests (xlsx, JSON, CSV zip), converted-values import, merge-conflict, auto-backup (once per logical day, exactly 7, dayEndsAt), SAF revoked, pre-import backup order, import preview confirmation: all in the passing run above.
+
+## Phase 11 decisions
+- Merge: join tables follow their parent (slots, versions, reminders follow goal; group_goals follow group; vacation_goals follow vacation); the parent's newer `updatedAt` wins, ties keep stored.
+- Empty string in optional text columns is treated as null on import and at write time.
+- Dashboard: log counts, sums and averages are COUNTIFS/SUMIFS/AVERAGEIFS formulas with cached values; day counts, streaks, missed and last-30 rate are app values labelled "calculated by app".
+- Settings travel only on Replace; app-lock state, `androidBackupFolderUri` and `lastKnownTimeZone` are never imported. Merge keeps device settings.
+- Auto-backup "already ran today" is derived from the newest `trek-backup-*` file name converted to a logical day, so no new setting was added. Pre-import safety backups are named `trek-preimport-*` and are never pruned.
+- Auto-backup runs on mount and on every foreground (`useAutoBackup`, mounted next to the notifications lifecycle). SAF copies are not pruned (only the app's own directory keeps 7).
+- Android SAF uses `expo-file-system/legacy` `StorageAccessFramework`. A revoked grant clears `androidBackupFolderUri` and the Backup screen shows a message.
+- Today "Back up now" runs the default-format export (lazy import to keep Today light); on failure it opens the Backup screen.
+- The dev-only Phase 10 export PoC button was removed. `src/services/xlsx/exportPoc.ts` and `workbookPoc.ts` are now unused by the app but left in place (workbookPoc still has its own tests).
+- `expo-document-picker` added (approved); `app.json` ios.infoPlist sets UIFileSharingEnabled and LSSupportsOpeningDocumentsInPlace.
+
+## Phase 11 device verification pending (run in Phase 13)
+- Share sheet for xlsx, JSON and CSV zip on iOS and Android.
+- Document picker import of xlsx, JSON and CSV zip, including files re-saved from Excel, Google Sheets and Numbers.
+- Android SAF folder selection, copying backups there, and revoked access handling.
+- iOS Files app shows the Trek backups folder.
+- Restore from auto-backup on a device.
+- Exported files open in Excel, Google Sheets and Numbers with correct values.
+
 ## Phase 10 verification (run on 2026-10-06)
 - `npx tsc --noEmit`: 0 errors.
 - `npx jest`: Test Suites: 77 passed, 77 total; Tests: 687 passed, 687 total.

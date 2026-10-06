@@ -17,7 +17,7 @@ export function VacationBanner({ active, onEnd }: VacationProps) {
 
 type BackupProps = { days: number | null; show: boolean; onBackUp: () => void; onSnooze: () => void };
 
-/** Backup-overdue banner; Back up now is a placeholder until Phase 11. */
+/** Backup-overdue banner. */
 export function BackupBanner({ days, show, onBackUp, onSnooze }: BackupProps) {
   const actions: BannerAction[] = [
     { label: strings.today.backUpNow, onPress: onBackUp },
@@ -30,9 +30,10 @@ export function BackupBanner({ days, show, onBackUp, onSnooze }: BackupProps) {
   );
 }
 
-/** Placeholder target for "Back up now" until the Phase 11 backup flow. */
+/** Runs the default-format export; opens the Backup screen if the export fails. */
 export function useBackUpNow(): () => void {
   const router = useRouter();
-  return () => router.push('/settings');
+  return () => {
+    void import('../../services/backup/files').then((m) => m.exportDefault()).catch(() => router.push('/settings/backup'));
+  };
 }
-

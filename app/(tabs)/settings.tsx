@@ -3,7 +3,6 @@ import { NotificationsRow } from '../../src/features/settings/NotificationsRow';
 import { getDb } from '../../src/db/client';
 import { seedDemoData } from '../../src/db/seed';
 import { AppText, Button, Card, Screen } from '../../src/ui/components';
-import { exportPocXlsx } from '../../src/services/xlsx/exportPoc';
 import { strings } from '../../src/strings/en';
 
 function localToday(): string {
@@ -30,6 +29,13 @@ export default function SettingsScreen() {
           icon="lock-closed-outline"
           accessibilityLabel={strings.settings.open(strings.settings.security)}
           onPress={() => router.push('/settings/security')}
+        />
+        <Button
+          variant="secondary"
+          label={strings.settings.backup}
+          icon="cloud-upload-outline"
+          accessibilityLabel={strings.settings.open(strings.settings.backup)}
+          onPress={() => router.push('/settings/backup')}
         />
         <Button
           variant="secondary"
@@ -60,12 +66,6 @@ export default function SettingsScreen() {
             label={strings.devTools.seed}
             accessibilityLabel={strings.devTools.seed}
             onPress={() => void seedDemoData(getDb(), { today: localToday() })}
-          />
-          <Button
-            variant="secondary"
-            label={strings.devTools.exportXlsx}
-            accessibilityLabel={strings.devTools.exportXlsx}
-            onPress={() => void exportPocXlsx()}
           />
         </Card>
       ) : null}

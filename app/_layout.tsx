@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DbProvider } from '../src/db/DbProvider';
 import { useNotificationsLifecycle } from '../src/services/notifications/useNotificationsLifecycle';
+import { useAutoBackup } from '../src/services/backup/useAutoBackup';
 import { strings } from '../src/strings/en';
 import { AppText, Screen } from '../src/ui/components';
 import { useAppReady } from '../src/features/startup/useAppReady';
@@ -22,6 +23,7 @@ void SplashScreen.preventAutoHideAsync();
 
 function NotificationsLifecycle() {
   useNotificationsLifecycle();
+  useAutoBackup();
   return null;
 }
 
