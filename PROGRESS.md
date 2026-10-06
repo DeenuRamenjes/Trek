@@ -3,13 +3,20 @@
 ## Status
 | Phase | Status |
 |---|---|
-| 0 Design | Complete — awaiting design approval (CLAUDE.md §7.0) |
-| 1 Scaffold, motion, tabs, splash | Complete |
+| 0 Design | Complete |
+| 1 Scaffold, motion, tabs, splash | Complete (device verification pending) |
 | 2 Data | Complete (device verification pending) |
 | 3 Domain | Complete |
 | 4 Goals and Today | Complete (device verification pending) |
+| 5 Groups and Stats | Complete (device verification pending) |
+| 6 History and vacation | Complete (device verification pending) |
+| 7 Reviews | Complete (device verification pending) |
+| 8 Notifications | Complete (device verification pending) |
+| 9 Appearance and app lock | Complete (device verification pending) |
+| 10 Export proof of concept | Complete (device verification pending) |
+| 11 Export, import, backup | Complete (device verification pending) |
 | 12 Widgets | Complete (device verification pending) |
-| 5–13 | Not started |
+| 13 Polish | Complete (device verification pending; see docs/DEVICE-CHECKLIST.md) |
 
 ## Phase 0 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no output.
@@ -163,7 +170,7 @@
 - Reanimated layout transitions (Collapse, list reflow) are allowed by CLAUDE.md §5.1 (approved diff D4).
 
 ## Deviations from CLAUDE.md
-- Phase 6: the history day editor is a fade modal, not a gesture bottom sheet (accepted in the final review; revisit in Phase 13 polish).
+- Phase 6: the history day editor was a fade modal; Phase 13 replaced it with a gesture bottom sheet (`GestureSheet`). No open deviation remains.
 - None beyond the approved diffs D1–D15. Plan amendments approved during execution are listed under Decisions.
 
 ## Open questions
@@ -343,3 +350,43 @@ These review notes were deferred to the phase that builds on the affected code. 
 - Weekly reminder triggers keep repeating beyond the 14-day planning window; correctness relies on the reconciler re-running (foreground, background task, data changes). Phase 8.
 - Carried to Phase 7: insights can number fewer than 2; timesPerWeek vacation units mix days and weeks; `timeBucket` ignores `dayEndsAt`; missing review tests (vacation-adjusted timesPerWeek, streak gained, slot partial ratio).
 - Carried to Phase 13: stats `goalUnits` cost is goals x logs; check against the 3-year seed.
+
+## Phase 13 verification (run on 2026-10-06)
+- `npx tsc --noEmit`: exit 0, no output.
+- `npx jest`: Test Suites: 97 passed, 97 total; Tests: 820 passed, 820 total; Snapshots: 1 passed, 1 total.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported: dist.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist; rm -rf dist`: Exported: dist.
+- Stats All range on the 3-year seed (jest, model only): 612 ms before Task 4, 225 to 265 ms after. Device time on a mid-range Android is pending (DEVICE-CHECKLIST.md).
+
+## Phase 13 decisions
+- Accessibility: `expectAllPressablesLabelled` (`src/test/a11y.ts`) walks the rendered tree and requires every pressable (press handler or interactive role) to have a role and a name. It is covered by its own negative tests and used in the Today, Stats, Goals, Goal form, History (with the day sheet open), Vacation (list and form), Review, Backup, Security (lock on and off), Appearance, Widget settings, Onboarding (pages 1 and 3) and Settings tests. The pass found no missing labels.
+- Font scaling: the goal and group drag rows used a fixed 72 height; they now use `minHeight` and the drag step follows the measured row height. Remaining fixed heights are icon-only controls at the 44 pt minimum, charts and decorative bars. The tab bar indicator pill stays 56 high (decorative, not text).
+- Reduce motion: `GestureSheet` tests assert the sheet is in place at once and closes at once with reduce motion on (and slides in and out with it off). Primitive-level reduce-motion tests from earlier phases remain.
+- History day editor is a gesture bottom sheet (`src/features/history/GestureSheet.tsx`): Reanimated spring in, drag the handle down past 120 dp or flick over 800 to dismiss, short drags spring back, scrim and Android back animate out. The drag gesture itself is device-verified (not unit tested).
+- Move up and down are disabled at list ends in Groups (`IconButton disabled`); the Goals action sheet already hides them. `GroupRow` no longer takes the unused `total` prop.
+- Stats optimization: `formatDate`, `isoWeekday` and `eachDate` no longer go through date-fns `format` and `getISODay`, and `isInActiveRange` caches each goal's target-days end and archive day (WeakMap on the immutable goal row). The equality test against the legacy model now uses a real seed group's goal ids from `group_goals` and is unchanged otherwise; the timing budget in the test dropped from 1500 to 800 ms.
+
+## Phase 13 device verification pending
+Everything listed in `docs/DEVICE-CHECKLIST.md` (grouped by platform, with steps and expected results). None of it was run in this environment.
+
+## Final status of CLAUDE.md section 9 "Done when"
+| Item | Status | Evidence |
+|---|---|---|
+| All unit tests pass and TypeScript compiles with 0 errors | Pass | `npx jest`: 97 suites, 820 tests; `npx tsc --noEmit`: exit 0 |
+| xlsx and JSON round-trips | Pass | `importPipeline.test.ts`: "xlsx: seed -> export -> parse -> replace -> identical snapshot", "json: ..." |
+| Converted-values import test | Pass | `importPipeline.test.ts`: describe "converted values" |
+| Merge test | Pass | `importPipeline.test.ts`: describe "merge" |
+| Exported xlsx shows correct values in Excel, Google Sheets, iOS Files preview | Pending | DEVICE-CHECKLIST.md: "Spreadsheet apps", "Files preview" |
+| Reminders fire on a weekly custom schedule on both platforms | Pending | DEVICE-CHECKLIST.md: "Weekly custom schedule" (planner logic: `reminderPlanner.test.ts`) |
+| iOS pending notifications never exceed 64 | Pass (logic); device pending | `reconciler.test.ts` "12 goals x 3 slots x 7 days stays at 64 or fewer"; `reminderPlanner.test.ts` "property: 200 random seeds never exceed 64"; DEVICE-CHECKLIST.md iOS "Pending notifications cap" |
+| Reminders suppressed during a vacation | Pass (logic); device pending | `reconciler.test.ts` "vacation range suppresses occurrences"; `reminderPlanner.test.ts` "vacation covering the whole horizon suppresses everything"; DEVICE-CHECKLIST.md "Vacation suppression" |
+| Editing a schedule leaves past stats unchanged | Pass | `statsCalculator.test.ts`/schedule suites: "past stats unchanged after a new schedule version starting today", "schedule version in effect that day decides" |
+| A check-in at 01:30 with dayEndsAt=3 counts for the previous day | Pass | `dayBoundary` "01:30 with 3 is previous day"; `integration.test.ts` "01:30 with dayEndsAt 3 logs against the previous day" |
+| "Mark done" from a notification and a widget is saved exactly once, including from a killed app | Pass (logic); device pending | `actionQueueProcessor.test.ts` "replays same id once"; `widgetEndToEnd.test.ts` duplicate delivery applied once; DEVICE-CHECKLIST.md "Mark done from a killed app", "Tap once" |
+| App lock works and hides content in the app switcher | Pass (logic); device pending | `security.test.tsx` SecurityScreen, LockGate and PrivacyOverlay tests; DEVICE-CHECKLIST.md "Biometric flow", "App switcher privacy" |
+| Backup reminder fires when overdue | Pass (logic); device pending | `backupPolicy` and `backupFlow.test.ts`; DEVICE-CHECKLIST.md "The backup reminder fires when overdue" |
+| Auto-backup keeps exactly 7 files | Pass | `backupFlow.test.ts` "writes once per logical day and keeps exactly 7" |
+| Restore works | Pass (logic); device pending | `RestoreList.test.tsx`, `importPipeline.test.ts`; DEVICE-CHECKLIST.md "Restore from auto-backup" |
+| Splash and all animations respect reduce motion | Pass (jest); device pending | `AnimatedSplash.test.tsx` "finishes immediately without an overlay under reduce motion", `primitives.test.tsx`, `TabBar.test.tsx`, `GestureSheet.test.tsx`; DEVICE-CHECKLIST.md "Reduce motion" |
+| App works fully in airplane mode | Pending | No network dependency exists (no network libraries, no calls); DEVICE-CHECKLIST.md "airplane mode" |
+| Stats under 500 ms on a mid-range Android (Phase 13 target) | Pending | Jest model time 225 to 265 ms; DEVICE-CHECKLIST.md "Stats render time" |

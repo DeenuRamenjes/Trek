@@ -6,6 +6,7 @@ import { createGoal, listLogs, upsertLog } from '../../../db/repositories';
 import { addDaysTo, parseDate } from '../../../domain/dates';
 import { logicalToday } from '../../../domain/dayBoundary';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { useSettings } from '../../settings/settingsStore';
@@ -42,6 +43,15 @@ async function show(db: TrekDb, goalId: string) {
 }
 
 describe('HistoryScreen', () => {
+  it('every pressable has a role and a name, also with the editor open', async () => {
+    const { db, goal } = await setup({ trackingType: 'count', targetValue: 3 });
+    await show(db, goal.id);
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(4);
+    await fireEvent.press(await screen.findByLabelText(new RegExp(`^${format(parseDate(today), 'EEEE d MMMM')}`)));
+    await screen.findByLabelText(h.increaseValue);
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(8);
+  });
+
   it('shows an empty hint when the goal has no logs and hides it once one exists', async () => {
     const { db, goal } = await setup();
     await show(db, goal.id);

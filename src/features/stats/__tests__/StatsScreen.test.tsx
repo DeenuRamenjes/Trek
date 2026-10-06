@@ -5,6 +5,7 @@ import { createGoal, createGroup, setGroupGoals, upsertLog } from '../../../db/r
 import { addDaysTo } from '../../../domain/dates';
 import { logicalToday } from '../../../domain/dayBoundary';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { useSettings } from '../../settings/settingsStore';
@@ -48,6 +49,12 @@ describe('StatsScreen', () => {
   beforeEach(() => {
     mockPush.mockClear();
     useSettings.getState().reset();
+  });
+
+  it('every pressable has a role and a name', async () => {
+    await setup({ groups: true });
+    await screen.findByLabelText(t.openReview(t.weeklyReview));
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(4);
   });
 
   it('with no goals shows a designed empty state that leads to goal creation', async () => {

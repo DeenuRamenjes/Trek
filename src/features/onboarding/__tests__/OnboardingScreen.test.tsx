@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { useSettings } from '../../settings/settingsStore';
 import { OnboardingScreen } from '../OnboardingScreen';
@@ -24,6 +25,16 @@ beforeEach(() => {
   mockEnsure.mockReset().mockResolvedValue(true);
   useSettings.getState().reset();
   onboardingStorage.set('done', false);
+});
+
+it('every pressable has a role and a name on every page', async () => {
+  await renderWithTheme(<OnboardingScreen />);
+  await screen.findByText(o.pages[0].title);
+  expect(expectAllPressablesLabelled()).toBeGreaterThan(0);
+  await fireEvent.press(screen.getByLabelText(o.next));
+  await fireEvent.press(await screen.findByLabelText(o.next));
+  await screen.findByText(o.pages[2].title);
+  expect(expectAllPressablesLabelled()).toBeGreaterThan(0);
 });
 
 it('walks three pages and requests permission only on the last', async () => {

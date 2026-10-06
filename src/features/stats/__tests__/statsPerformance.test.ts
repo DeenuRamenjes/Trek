@@ -1,6 +1,6 @@
 import { seedDemoData } from '../../../db/seed';
 import type { TrekDb } from '../../../db/client';
-import { listGroups, listLogs } from '../../../db/repositories';
+import { listGroupGoals, listGroups, listLogs } from '../../../db/repositories';
 import { createTestDb } from '../../../test/testDb';
 import { loadGoalContexts } from '../../goals/goalContexts';
 import type { StatsMode, StatsRange } from '../../../domain/statsCalculator';
@@ -21,8 +21,9 @@ describe('stats model on the 3-year seed', () => {
     await seedDemoData(db, { today });
     contexts = await loadGoalContexts(db);
     logs = await listLogs(db);
-    const groups = (await listGroups(db)) as unknown as { goalIds?: string[] }[];
-    groupGoalIds = groups[0]?.goalIds?.length ? groups[0].goalIds : contexts.slice(0, 4).map((c) => c.goal.id);
+    const [group] = await listGroups(db);
+    groupGoalIds = (await listGroupGoals(db, group.id)).map((l) => l.goalId);
+    expect(groupGoalIds.length).toBeGreaterThan(0);
   });
 
   const filters: [string, () => string[] | null][] = [
@@ -48,6 +49,6 @@ describe('stats model on the 3-year seed', () => {
     const ms = performance.now() - t0;
     // eslint-disable-next-line no-console
     console.log(`stats All range: ${ms.toFixed(0)} ms`);
-    expect(ms).toBeLessThan(1500);
+    expect(ms).toBeLessThan(800);
   });
 });

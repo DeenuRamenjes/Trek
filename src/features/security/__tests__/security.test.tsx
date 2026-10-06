@@ -4,6 +4,7 @@ import { AppState, Text, View } from 'react-native';
 import { DEFAULT_SETTINGS } from '../../../domain/settings';
 import { authenticate } from '../../../services/appLock';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { ThemeProvider } from '../../../ui/ThemeProvider';
 import { useSettings } from '../../settings/settingsStore';
 import { LockGate } from '../LockGate';
@@ -43,6 +44,12 @@ beforeEach(() => {
 });
 
 describe('SecurityScreen', () => {
+  it.each([false, true])('every pressable has a role and a name (lock enabled: %s)', async (enabled) => {
+    setLock({ enabled });
+    await render(wrap(<SecurityScreen />));
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(enabled ? 3 : 0);
+  });
+
   it('enabling fails without enrolment, explains and stays off', async () => {
     auth.getEnrolledLevelAsync.mockResolvedValue(0);
     await render(wrap(<SecurityScreen />));

@@ -10,7 +10,7 @@ import { uiIcons } from '../../ui/icons';
 import { useTheme } from '../../ui/ThemeProvider';
 import { radii, spacing, typography } from '../../ui/tokens';
 import { DURATION_STEP } from '../tracking/useCheckOff';
-import { SheetFrame } from '../tracking/LogSheet';
+import { GestureSheet } from './GestureSheet';
 import { derivedStatus, slotStatus, valueForStatus, type EditState, type EditStatus } from './dayEdit';
 
 const h = strings.history;
@@ -48,7 +48,7 @@ export function DayEditorSheet({ goal, date, slots, initial, onSave, onClear, on
     });
 
   return (
-    <SheetFrame title={h.sheetTitle(format(parseDate(date), 'EEEE d MMMM'))} onClose={onClose}>
+    <GestureSheet title={h.sheetTitle(format(parseDate(date), 'EEEE d MMMM'))} onClose={onClose}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
         <AppText variant="label" tone="secondary">
           {slotted ? h.slotsLabel : h.statusLabel}
@@ -100,7 +100,7 @@ export function DayEditorSheet({ goal, date, slots, initial, onSave, onClear, on
           <Button label={h.save} disabled={state.status === null} onPress={() => onSave(state)} />
         </View>
       </ScrollView>
-    </SheetFrame>
+    </GestureSheet>
   );
 }
 

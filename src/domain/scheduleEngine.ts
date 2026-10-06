@@ -41,12 +41,29 @@ export function isScheduledOn(version: ScheduleVersion, date: string): boolean {
 }
 
 /** Start/end/targetDays, pauses and archive; ignores schedule and vacations. */
+type Limits = { dayEndsAt: number; targetEnd: string | null; archivedOn: string | null };
+// Goal rows are never mutated in place, so their derived date limits can be cached (hot in 3-year stats).
+const limitsCache = new WeakMap<Goal, Limits>();
+
+function limitsOf(goal: Goal, dayEndsAt: number): Limits {
+  const hit = limitsCache.get(goal);
+  if (hit && hit.dayEndsAt === dayEndsAt) return hit;
+  const limits: Limits = {
+    dayEndsAt,
+    targetEnd: goal.targetDays != null ? addDaysTo(goal.startDate, goal.targetDays) : null,
+    archivedOn: goal.archivedAt ? logicalDate(new Date(goal.archivedAt), dayEndsAt) : null,
+  };
+  limitsCache.set(goal, limits);
+  return limits;
+}
+
 export function isInActiveRange(goal: Goal, pauses: GoalPause[], date: string, dayEndsAt: number): boolean {
   if (date < goal.startDate) return false;
   if (goal.endDate && date > goal.endDate) return false;
-  if (goal.targetDays != null && date >= addDaysTo(goal.startDate, goal.targetDays)) return false;
+  const limits = limitsOf(goal, dayEndsAt);
+  if (limits.targetEnd !== null && date >= limits.targetEnd) return false;
   if (pauses.some((p) => p.startDate <= date && (p.endDate == null || date <= p.endDate))) return false;
-  if (goal.archivedAt && date >= logicalDate(new Date(goal.archivedAt), dayEndsAt)) return false;
+  if (limits.archivedOn !== null && date >= limits.archivedOn) return false;
   return true;
 }
 

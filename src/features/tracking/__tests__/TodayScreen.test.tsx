@@ -5,6 +5,7 @@ import { createGoal, createVacation, listLogs } from '../../../db/repositories';
 import { addDaysTo } from '../../../domain/dates';
 import { logicalToday } from '../../../domain/dayBoundary';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { loadGoalContexts } from '../../goals/goalContexts';
@@ -35,6 +36,12 @@ async function setup(specs: Spec[]) {
 }
 
 describe('TodayScreen', () => {
+  it('every pressable has a role and a name', async () => {
+    await setup([{ name: 'Walk' }, { name: 'Water', trackingType: 'count', targetValue: 8 }]);
+    await screen.findByLabelText(t.markDone('Walk'));
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(2);
+  });
+
   it('tap check marks done and shows undo; undo deletes the log', async () => {
     const db = await setup([{ name: 'Walk' }]);
     await fireEvent.press(await screen.findByLabelText(t.markDone('Walk')));

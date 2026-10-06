@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import SettingsScreen from '../../../app/(tabs)/settings';
 import { ThemeProvider } from '../../ui/ThemeProvider';
 import { strings } from '../../strings/en';
+import { expectAllPressablesLabelled } from '../../test/a11y';
 
 const mockShare = jest.fn<Promise<boolean>, []>();
 jest.mock('../errorLog', () => ({ shareErrorLog: () => mockShare() }));
@@ -16,6 +17,11 @@ const renderScreen = () =>
       <SettingsScreen />
     </ThemeProvider>,
   );
+
+it('every settings pressable has a role and a name', async () => {
+  await renderScreen();
+  expect(expectAllPressablesLabelled()).toBeGreaterThan(3);
+});
 
 it('Export error log row shares the log', async () => {
   mockShare.mockResolvedValue(true);

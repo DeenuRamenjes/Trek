@@ -3,6 +3,7 @@ import { DbProvider } from '../../../db/DbProvider';
 import type { TrekDb } from '../../../db/client';
 import { createGoal, listGoals } from '../../../db/repositories';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { GoalsList } from '../GoalsList';
@@ -27,6 +28,12 @@ async function setup(names: string[]) {
 
 describe('GoalsList', () => {
   beforeEach(() => mockPush.mockClear());
+
+  it('every pressable has a role and a name', async () => {
+    await setup(['Alpha', 'Beta']);
+    await screen.findByLabelText(s.rowActions('Alpha'));
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(4);
+  });
 
   it('shows empty state; template chip opens new goal with template', async () => {
     await setup([]);

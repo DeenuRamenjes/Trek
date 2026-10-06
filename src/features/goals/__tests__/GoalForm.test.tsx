@@ -3,6 +3,7 @@ import { DbProvider } from '../../../db/DbProvider';
 import type { TrekDb } from '../../../db/client';
 import { createGoal, listGoals, listScheduleVersions } from '../../../db/repositories';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { GoalForm } from '../GoalForm';
@@ -18,6 +19,15 @@ function newDb(): TrekDb {
 }
 
 describe('GoalForm', () => {
+  it('every pressable has a role and a name', async () => {
+    await renderWithTheme(
+      <DbProvider db={newDb()}>
+        <GoalForm initial={defaultGoalForm()} onSaved={jest.fn()} onCancel={jest.fn()} />
+      </DbProvider>,
+    );
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(4);
+  });
+
   it('keeps Save disabled until the name is non-empty', async () => {
     const db = newDb();
     await renderWithTheme(

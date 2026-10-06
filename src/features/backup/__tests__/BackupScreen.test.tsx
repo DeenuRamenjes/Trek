@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { DEFAULT_SETTINGS } from '../../../domain/settings';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { ThemeProvider } from '../../../ui/ThemeProvider';
 import { useSettings } from '../../settings/settingsStore';
 import { BackupScreen } from '../BackupScreen';
@@ -30,6 +31,12 @@ const wrap = (n: React.ReactNode) => <ThemeProvider mode="light">{n}</ThemeProvi
 beforeEach(() => {
   jest.clearAllMocks();
   useSettings.setState({ settings: DEFAULT_SETTINGS });
+});
+
+it('every pressable has a role and a name', async () => {
+  await render(wrap(<BackupScreen />));
+  await screen.findByLabelText(t.exportXlsx);
+  expect(expectAllPressablesLabelled()).toBeGreaterThan(3);
 });
 
 it('format buttons call export', async () => {

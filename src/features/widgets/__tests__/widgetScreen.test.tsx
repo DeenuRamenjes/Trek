@@ -1,6 +1,7 @@
 import { fireEvent, screen } from '@testing-library/react-native';
 import { DEFAULT_SETTINGS } from '../../../domain/settings';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { useSettings } from '../../settings/settingsStore';
 import { WidgetSettingsScreen } from '../WidgetSettingsScreen';
@@ -19,6 +20,11 @@ const t = strings.widgetSettings;
 beforeEach(() => {
   useSettings.setState({ settings: { ...DEFAULT_SETTINGS } });
   mockItems.mockReturnValue([{ goalId: 'a', name: 'Alpha', status: 'done', progress: 1 }]);
+});
+
+it('every pressable has a role and a name', async () => {
+  await renderWithTheme(<WidgetSettingsScreen />);
+  expect(expectAllPressablesLabelled()).toBeGreaterThan(1);
 });
 
 it('preview shows an empty state when nothing is due', async () => {

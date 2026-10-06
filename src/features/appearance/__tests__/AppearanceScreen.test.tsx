@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { DEFAULT_SETTINGS } from '../../../domain/settings';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { ThemeProvider } from '../../../ui/ThemeProvider';
 import { useSettings } from '../../settings/settingsStore';
 import { AppearanceScreen } from '../AppearanceScreen';
@@ -22,6 +23,11 @@ async function open() {
     </ThemeProvider>,
   );
 }
+
+it('every pressable has a role and a name', async () => {
+  await open();
+  expect(expectAllPressablesLabelled()).toBeGreaterThan(8);
+});
 
 it('theme control updates store', async () => {
   await open();

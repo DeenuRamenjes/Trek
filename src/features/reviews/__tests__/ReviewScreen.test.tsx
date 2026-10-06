@@ -5,6 +5,7 @@ import { seedDemoData } from '../../../db/seed';
 import { logicalToday } from '../../../domain/dayBoundary';
 import { previousPeriod } from '../../../domain/reviewBuilder';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { useSettings } from '../../settings/settingsStore';
@@ -69,6 +70,12 @@ describe.each(['week', 'month'] as const)('ReviewScreen %s (seed data)', (kind) 
 });
 
 describe('ReviewScreen states', () => {
+  it('every pressable has a role and a name on a seeded review', async () => {
+    await show(seeded, `week-${today}`);
+    await screen.findByLabelText(/^Overall completion \d+ percent$/, undefined, { timeout: 10000 });
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(1);
+  }, 30000);
+
   it('invalid param shows the not-found state with a way back', async () => {
     await show(createTestDb().db as unknown as TrekDb, 'week-nope');
     await screen.findByText(r.notFoundTitle);

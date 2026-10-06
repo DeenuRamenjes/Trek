@@ -19,21 +19,23 @@ import { haptic } from '../tracking/haptics';
 const s = strings.groups;
 const ROW_HEIGHT = 72;
 const ROW_GAP = spacing.sm;
-const STEP = ROW_HEIGHT + ROW_GAP;
 
 type RowProps = {
   group: Group;
   index: number;
   count: number;
-  total: number;
+  isLast: boolean;
   onOpen: () => void;
   onMove: (from: number, to: number) => void;
 };
 
-function GroupRow({ group, index, count, total, onOpen, onMove }: RowProps) {
+function GroupRow({ group, index, count, isLast, onOpen, onMove }: RowProps) {
   const { colors } = useTheme();
   const reduce = useReduceMotion();
   const y = useSharedValue(0);
+  // Rows grow with the system font size; the drag step follows the measured height.
+  const [rowHeight, setRowHeight] = useState(ROW_HEIGHT);
+  const step = rowHeight + ROW_GAP;
   const lifted = useSharedValue(0);
 
   const drag = Gesture.Pan()
@@ -45,7 +47,7 @@ function GroupRow({ group, index, count, total, onOpen, onMove }: RowProps) {
       y.value = e.translationY;
     })
     .onEnd((e) => {
-      const to = index + Math.round(e.translationY / STEP);
+      const to = index + Math.round(e.translationY / step);
       y.value = reduce ? 0 : withSpring(0, springs.snappy);
       lifted.value = 0;
       if (to !== index) runOnJS(onMove)(index, to);
@@ -57,7 +59,8 @@ function GroupRow({ group, index, count, total, onOpen, onMove }: RowProps) {
   }));
 
   return (
-    <Animated.View style={[{ height: ROW_HEIGHT, marginBottom: ROW_GAP }, animatedStyle]}>
+    <Animated.View onLayout={(e) => setRowHeight(e.nativeEvent.layout.height)}
+      style={[{ minHeight: ROW_HEIGHT, marginBottom: ROW_GAP }, animatedStyle]}>
       <Card style={styles.row}>
         <GestureDetector gesture={drag}>
           <View accessible accessibilityLabel={s.dragHandle(group.name)} style={styles.handle}>
@@ -75,8 +78,8 @@ function GroupRow({ group, index, count, total, onOpen, onMove }: RowProps) {
             </AppText>
           </View>
         </Pressable>
-        <IconButton icon="chevron-up" accessibilityLabel={s.moveUp(group.name)} onPress={() => onMove(index, index - 1)} />
-        <IconButton icon="chevron-down" accessibilityLabel={s.moveDown(group.name)} onPress={() => onMove(index, index + 1)} />
+        <IconButton icon="chevron-up" accessibilityLabel={s.moveUp(group.name)} disabled={index === 0} onPress={() => onMove(index, index - 1)} />
+        <IconButton icon="chevron-down" accessibilityLabel={s.moveDown(group.name)} disabled={isLast} onPress={() => onMove(index, index + 1)} />
       </Card>
     </Animated.View>
   );
@@ -133,7 +136,7 @@ export function GroupsSection() {
               group={group}
               index={index}
               count={counts.get(group.id) ?? 0}
-              total={groups.length}
+              isLast={index === groups.length - 1}
               onOpen={() => router.push(`/group/${group.id}`)}
               onMove={move}
             />
@@ -147,7 +150,7 @@ export function GroupsSection() {
 const styles = StyleSheet.create({
   root: { gap: spacing.sm },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  row: { flexDirection: 'row', alignItems: 'center', height: ROW_HEIGHT, paddingVertical: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: ROW_HEIGHT, paddingVertical: 0 },
   handle: { width: minTapTarget, height: minTapTarget, alignItems: 'center', justifyContent: 'center' },
   open: { flex: 1, minHeight: minTapTarget, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   text: { flex: 1, gap: 2 },

@@ -76,6 +76,10 @@ describe('GroupsSection', () => {
     await screen.findByText(s.goalCount(1));
     await fireEvent.press(screen.getByLabelText(s.openGroup('X')));
     expect(mockPush).toHaveBeenCalledWith(`/group/${x}`);
+    expect(screen.getByLabelText(s.moveUp('X'))).toBeDisabled();
+    expect(screen.getByLabelText(s.moveDown('X'))).toBeEnabled();
+    expect(screen.getByLabelText(s.moveUp('Y'))).toBeEnabled();
+    expect(screen.getByLabelText(s.moveDown('Y'))).toBeDisabled();
     await fireEvent.press(screen.getByLabelText(s.moveDown('X')));
     await waitFor(async () => expect((await listGroups(db)).map((g) => g.name)).toEqual(['Y', 'X']));
   });

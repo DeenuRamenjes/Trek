@@ -48,7 +48,6 @@ import { templateKeys } from "./templates";
 const s = strings.goals;
 const ROW_HEIGHT = 72;
 const ROW_GAP = spacing.sm;
-const STEP = ROW_HEIGHT + ROW_GAP;
 
 type RowProps = {
   goal: Goal;
@@ -72,6 +71,9 @@ function GoalRow({
   const { colors } = useTheme();
   const reduce = useReduceMotion();
   const y = useSharedValue(0);
+  // Rows grow with the system font size; the drag step follows the measured height.
+  const [rowHeight, setRowHeight] = useState(ROW_HEIGHT);
+  const step = rowHeight + ROW_GAP;
   const lifted = useSharedValue(0);
   const paused = goal.pausedAt != null;
 
@@ -85,7 +87,7 @@ function GoalRow({
       y.value = e.translationY;
     })
     .onEnd((e) => {
-      const to = index + Math.round(e.translationY / STEP);
+      const to = index + Math.round(e.translationY / step);
       y.value = reduce ? 0 : withSpring(0, springs.snappy);
       lifted.value = 0;
       runOnJS(onDragEnd)(index, to);
@@ -97,7 +99,8 @@ function GoalRow({
 
   return (
     <Animated.View
-      style={[{ height: ROW_HEIGHT, marginBottom: ROW_GAP }, animatedStyle]}
+      onLayout={(e) => setRowHeight(e.nativeEvent.layout.height)}
+      style={[{ minHeight: ROW_HEIGHT, marginBottom: ROW_GAP }, animatedStyle]}
     >
       <Card style={styles.row}>
         <GestureDetector gesture={drag}>
@@ -341,7 +344,7 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    height: ROW_HEIGHT,
+    minHeight: ROW_HEIGHT,
     paddingVertical: 0,
   },
   handle: {

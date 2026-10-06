@@ -5,6 +5,7 @@ import { createGoal, createVacation, listVacations } from '../../../db/repositor
 import { logicalToday } from '../../../domain/dayBoundary';
 import { addDaysTo } from '../../../domain/dates';
 import { strings } from '../../../strings/en';
+import { expectAllPressablesLabelled } from '../../../test/a11y';
 import { renderWithTheme } from '../../../test/renderWithTheme';
 import { createTestDb } from '../../../test/testDb';
 import { useSettings } from '../../settings/settingsStore';
@@ -39,6 +40,17 @@ describe('validateVacation', () => {
 });
 
 describe('VacationScreen', () => {
+  it('every pressable has a role and a name in list and form', async () => {
+    const db = createTestDb().db as unknown as TrekDb;
+    await createGoal(db, { name: 'Walk', icon: 'flag', color: '#2E7D5B' } as never, today);
+    await show(db);
+    await screen.findByText(s.emptyTitle);
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(1);
+    await fireEvent.press(screen.getByText(s.newVacation));
+    await screen.findByLabelText(s.endLabel);
+    expect(expectAllPressablesLabelled()).toBeGreaterThan(3);
+  });
+
   it('shows empty state', async () => {
     const db = createTestDb().db as unknown as TrekDb;
     await show(db);
