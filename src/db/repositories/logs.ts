@@ -1,0 +1,90 @@
+import { and, asc, eq, gte, isNull, lte, or, type SQL } from 'drizzle-orm';
+import type { TrekDb } from '../client';
+import { emitDbChanged } from '../changes';
+import { withTransaction } from '../transaction';
+import { newId, nowIso } from '../ids';
+import { blankToNull } from '../text';
+import { logs, type Log } from '../schema';
+
+export type LogInput = {
+  goalId: string;
+  date: string;
+  slotId?: string | null;
+  value: number;
+  status: Log['status'];
+  note?: string | null;
+};
+
+/** Insert, or update the row for (goalId, date, slotId); null slotId counts as one value. loggedAt stays from the first insert. On update an undefined note keeps the existing one; null clears it. */
+export async function upsertLog(db: TrekDb, input: LogInput): Promise<Log> {
+  return withTransaction(db, (tx) => upsertLogTx(tx, input));
+}
+
+/** upsertLog without its own transaction; call only inside an open withTransaction. */
+export async function upsertLogTx(tx: TrekDb, input: LogInput): Promise<Log> {
+  const now = nowIso();
+  const slotId = input.slotId ?? null;
+  {
+    const key = and(
+      eq(logs.goalId, input.goalId),
+      eq(logs.date, input.date),
+      slotId === null ? isNull(logs.slotId) : eq(logs.slotId, slotId),
+    );
+    const existing = (await tx.select().from(logs).where(key))[0];
+    if (existing) {
+      await tx
+        .update(logs)
+        .set({ value: input.value, status: input.status, note: input.note === undefined ? existing.note : blankToNull(input.note), updatedAt: now })
+        .where(eq(logs.id, existing.id));
+      return (await tx.select().from(logs).where(eq(logs.id, existing.id)))[0];
+    }
+    const id = newId();
+    await tx.insert(logs).values({
+      id,
+      goalId: input.goalId,
+      date: input.date,
+      slotId,
+      value: input.value,
+      status: input.status,
+      note: blankToNull(input.note),
+      loggedAt: now,
+      updatedAt: now,
+    });
+    return (await tx.select().from(logs).where(eq(logs.id, id)))[0];
+  }
+}
+
+/** deleteLog without its own transaction or change event; call only inside an open withTransaction. */
+export async function deleteLogTx(tx: TrekDb, id: string): Promise<void> {
+  await tx.delete(logs).where(eq(logs.id, id));
+}
+
+export async function deleteLog(db: TrekDb, id: string): Promise<void> {
+  await db.delete(logs).where(eq(logs.id, id));
+  emitDbChanged('logs');
+}
+
+export async function listLogs(db: TrekDb, opts: { goalId?: string; from?: string; to?: string } = {}): Promise<Log[]> {
+  const conds: SQL[] = [];
+  if (opts.goalId) conds.push(eq(logs.goalId, opts.goalId));
+  if (opts.from) conds.push(gte(logs.date, opts.from));
+  if (opts.to) conds.push(lte(logs.date, opts.to));
+  return db
+    .select()
+    .from(logs)
+    .where(conds.length ? and(...conds) : undefined)
+    .orderBy(asc(logs.date), asc(logs.loggedAt));
+}
+
+/** Re-inserts `row` exactly as it was (same id, loggedAt, updatedAt), replacing any row with that id or that (goalId, date, slotId). Used by undo. */
+export async function restoreLog(db: TrekDb, row: Log): Promise<void> {
+  await withTransaction(db, async (tx) => {
+    const key = and(
+      eq(logs.goalId, row.goalId),
+      eq(logs.date, row.date),
+      row.slotId == null ? isNull(logs.slotId) : eq(logs.slotId, row.slotId),
+    );
+    await tx.delete(logs).where(or(eq(logs.id, row.id), key));
+    await tx.insert(logs).values(row);
+  });
+}
