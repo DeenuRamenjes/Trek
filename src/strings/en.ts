@@ -4,6 +4,17 @@ import { NOTE_MAX_LENGTH } from '../domain/limits';
 
 export const strings = {
   appName: 'Trek',
+  onboarding: {
+    pages: [
+      { icon: 'mark', title: 'Welcome to Trek', body: 'Track the goals that matter to you. Everything stays on this device.' },
+      { icon: 'checkmark-circle-outline', title: 'Build a calm routine', body: 'Check off goals each day, keep streaks, and pause for vacations without losing progress.' },
+      { icon: 'notifications-outline', title: 'Stay on track', body: 'Allow reminders so Trek can nudge you at the times you choose. You can change this later.' },
+    ] as const,
+    next: 'Next',
+    enable: 'Enable reminders',
+    notNow: 'Not now',
+    progress: (current: number, total: number) => `Step ${current} of ${total}`,
+  },
   startup: {
     errorTitle: 'Trek could not start',
     errorBody: 'Restart the app. If this keeps happening, export the error log from Settings.',
@@ -146,6 +157,10 @@ export const strings = {
       `${done} done, ${partial} partial, ${skipped} skipped, ${vacation} vacation, ${missed} missed`,
     bestWeekdayNone: 'Not enough data yet',
     reviewsTitle: 'Reviews',
+    noGoalsTitle: 'No goals to analyze yet',
+    noGoalsBody: 'Create a goal and log a few days to see statistics here.',
+    noGoalsAction: 'Create goal',
+    emptyGroupBody: 'This group has no goals yet. Add goals to it to see statistics.',
     unitDays: 'days',
     unitWeeks: 'weeks',
     noChartData: 'Not enough data yet',
@@ -362,6 +377,8 @@ export const strings = {
     bestStreak: 'Best streak',
     monthCompletion: 'This month',
     legend: 'Legend',
+    noLogsTitle: 'No check-ins yet',
+    noLogsBody: 'Tap a day in the calendar to log it. Past days can be filled in too.',
     dayLabel: (date: string, status: string) => `${date}, ${status}`,
     sheetTitle: (date: string) => `Log for ${date}`,
     value: 'Value',

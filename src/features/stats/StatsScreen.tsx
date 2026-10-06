@@ -75,10 +75,12 @@ export function StatsScreen() {
   const selected = groups.some((g) => g.id === group) ? group : ALL_GOALS;
   const noGroups = loaded !== null && groups.length === 0;
   const blocked = noGroups && emptyMode === 'requireGroup';
+  const noGoals = loaded !== null && loaded.contexts.length === 0;
+  const emptyGroup = selected !== ALL_GOALS && (loaded?.links[selected] ?? []).length === 0;
 
   const model = useMemo(
     () =>
-      loaded && !blocked
+      loaded && !blocked && !noGoals && !emptyGroup
         ? buildStatsModel({
             contexts: loaded.contexts,
             logs,
@@ -89,10 +91,11 @@ export function StatsScreen() {
             weekStart,
           })
         : null,
-    [loaded, blocked, logs, selected, range, mode, today, weekStart],
+    [loaded, blocked, noGoals, emptyGroup, logs, selected, range, mode, today, weekStart],
   );
 
   const createGroup = () => router.push('/group/new');
+  const createGoal = () => router.push('/goal/new');
   const weekPeriod = formatPeriodParam({ kind: 'week', anchor: today }, weekStart);
   const monthPeriod = formatPeriodParam({ kind: 'month', anchor: today }, weekStart);
 
@@ -110,6 +113,12 @@ export function StatsScreen() {
           <AppText variant="headline">{t.emptyRequireGroup}</AppText>
           <Button label={t.createGroupAction} icon={uiIcons.add} onPress={createGroup} />
         </Card>
+      ) : noGoals ? (
+        <Card muted>
+          <AppText variant="headline">{t.noGoalsTitle}</AppText>
+          <AppText tone="secondary">{t.noGoalsBody}</AppText>
+          <Button label={t.noGoalsAction} icon={uiIcons.add} onPress={createGoal} />
+        </Card>
       ) : (
         <View style={styles.stack}>
           <GroupDropdown groups={groups} selected={selected} onChange={setGroup} />
@@ -123,11 +132,16 @@ export function StatsScreen() {
               { value: 'strict', label: t.strict },
             ]}
           />
-          {noGroups ? (
+          {noGroups && !noGoals ? (
             <Card muted>
               <AppText variant="headline">{t.createGroupTitle}</AppText>
               <AppText tone="secondary">{t.createGroupBody}</AppText>
               <Button label={t.createGroupAction} icon={uiIcons.add} onPress={createGroup} />
+            </Card>
+          ) : null}
+          {emptyGroup ? (
+            <Card muted>
+              <AppText tone="secondary">{t.emptyGroupBody}</AppText>
             </Card>
           ) : null}
           {model ? <StatsCards model={model} /> : null}

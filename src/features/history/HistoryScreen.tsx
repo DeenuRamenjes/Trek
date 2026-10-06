@@ -173,6 +173,12 @@ export function HistoryScreen({ goalId }: { goalId: string }) {
           <MonthGrid model={model} weekStart={weekStart} onSelectDay={open} />
         </Animated.View>
       </GestureDetector>
+      {logs.length === 0 ? (
+        <Card muted>
+          <AppText variant="headline">{h.noLogsTitle}</AppText>
+          <AppText tone="secondary">{h.noLogsBody}</AppText>
+        </Card>
+      ) : null}
       <Card muted>
         <AppText variant="label" tone="secondary">
           {h.legend}

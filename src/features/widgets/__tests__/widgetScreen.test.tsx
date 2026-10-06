@@ -7,15 +7,25 @@ import { WidgetSettingsScreen } from '../WidgetSettingsScreen';
 
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: jest.fn() }) }));
 jest.mock('../../../services/widgetBridge', () => ({ refreshWidgets: jest.fn(async () => undefined) }));
+const mockItems = jest.fn();
 jest.mock('../useWidgetPreview', () => ({
   useWidgetPreview: () => ({
     groups: [{ id: 'g1', name: 'Morning' }],
-    snapshot: { date: '2026-10-05', done: 1, total: 2, items: [{ goalId: 'a', name: 'Alpha', status: 'done', progress: 1 }] },
+    snapshot: { date: '2026-10-05', done: 1, total: 2, items: mockItems() },
   }),
 }));
 
 const t = strings.widgetSettings;
-beforeEach(() => useSettings.setState({ settings: { ...DEFAULT_SETTINGS } }));
+beforeEach(() => {
+  useSettings.setState({ settings: { ...DEFAULT_SETTINGS } });
+  mockItems.mockReturnValue([{ goalId: 'a', name: 'Alpha', status: 'done', progress: 1 }]);
+});
+
+it('preview shows an empty state when nothing is due', async () => {
+  mockItems.mockReturnValue([]);
+  await renderWithTheme(<WidgetSettingsScreen />);
+  expect(screen.getByText(t.empty)).toBeTruthy();
+});
 
 it('group picker updates widget.groupId', async () => {
   await renderWithTheme(<WidgetSettingsScreen />);

@@ -1,5 +1,5 @@
-import { Redirect } from 'expo-router';
+import { OnboardingGate } from '../src/features/onboarding/OnboardingGate';
 
 export default function Index() {
-  return <Redirect href="/today" />;
+  return <OnboardingGate />;
 }

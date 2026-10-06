@@ -17,8 +17,16 @@ const t = strings.stats;
 const today = logicalToday(new Date(), 0);
 const start = addDaysTo(today, -40);
 
-async function setup(opts: { groups?: boolean } = {}) {
+async function setup(opts: { groups?: boolean; noGoals?: boolean } = {}) {
   const db = createTestDb().db as unknown as TrekDb;
+  if (opts.noGoals) {
+    await renderWithTheme(
+      <DbProvider db={db}>
+        <StatsScreen />
+      </DbProvider>,
+    );
+    return db;
+  }
   const a = await createGoal(db, { name: 'Alpha', icon: 'flag', color: '#2E7D5B', startDate: start } as never, start);
   const b = await createGoal(db, { name: 'Beta', icon: 'flag', color: '#2E7D5B', startDate: start } as never, start);
   // Alpha done 3 days ago, Beta done 20 days ago.
@@ -40,6 +48,22 @@ describe('StatsScreen', () => {
   beforeEach(() => {
     mockPush.mockClear();
     useSettings.getState().reset();
+  });
+
+  it('with no goals shows a designed empty state that leads to goal creation', async () => {
+    await setup({ noGoals: true });
+    await screen.findByText(t.noGoalsTitle);
+    await fireEvent.press(screen.getByLabelText(t.noGoalsAction));
+    expect(mockPush).toHaveBeenCalledWith('/goal/new');
+    expect(screen.queryByText(t.createGroupTitle)).toBeNull();
+  });
+
+  it('a selected group with no goals explains why nothing shows', async () => {
+    const db = await setup({ groups: true });
+    const g = await createGroup(db, { name: 'Empty', color: '#2E7D5B', icon: 'flag' });
+    await fireEvent.press(await screen.findByLabelText(`${t.chooseGroup}: ${t.allGoals}`));
+    await fireEvent.press(await screen.findByLabelText(g.name));
+    await screen.findByText(t.emptyGroupBody);
   });
 
   it('requireGroup with no groups shows the empty state and CTA', async () => {

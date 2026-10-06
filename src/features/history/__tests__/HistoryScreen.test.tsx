@@ -42,6 +42,14 @@ async function show(db: TrekDb, goalId: string) {
 }
 
 describe('HistoryScreen', () => {
+  it('shows an empty hint when the goal has no logs and hides it once one exists', async () => {
+    const { db, goal } = await setup();
+    await show(db, goal.id);
+    expect(screen.getByText(h.noLogsTitle)).toBeTruthy();
+    await upsertLog(db, { goalId: goal.id, date: today, value: 1, status: 'done' });
+    await waitFor(() => expect(screen.queryByText(h.noLogsTitle)).toBeNull());
+  });
+
   it('shows glyph labels for fixture logs and next/prev change the month', async () => {
     const { db, goal } = await setup();
     await upsertLog(db, { goalId: goal.id, date: `${prev}-03`, value: 1, status: 'done' });
