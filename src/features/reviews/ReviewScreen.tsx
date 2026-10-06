@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -37,7 +38,7 @@ export function ReviewScreen({ param }: { param: string | undefined }) {
     const run = () =>
       void loadGoalContexts(db, { dayEndsAt })
         .then((c) => alive && setContexts(c))
-        .catch(() => undefined);
+        .catch(logCatch('review.load'));
     run();
     const off = onDbChanged(run);
     return () => {

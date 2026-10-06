@@ -1,3 +1,4 @@
+import { logCatch } from '../errorLog';
 import type { TrekDb } from '../../db/client';
 import type { Settings } from '../../domain/settings';
 import { toCsvZip } from './csvExporter';
@@ -107,7 +108,7 @@ export async function runImport(
   const backupName = await writePreImportBackup(deps);
   const result = await applyImport(deps.db, validated, mode);
   if (mode === 'replace') deps.updateSettings(importableSettings(validated.settings));
-  await Promise.resolve(deps.reconcile()).catch(() => undefined);
-  await Promise.resolve(deps.refreshWidgets()).catch(() => undefined);
+  await Promise.resolve(deps.reconcile()).catch(logCatch('import.reconcile'));
+  await Promise.resolve(deps.refreshWidgets()).catch(logCatch('import.widgets'));
   return { result, backupName };
 }

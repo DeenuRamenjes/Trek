@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -50,7 +51,7 @@ export function HistoryScreen({ goalId }: { goalId: string }) {
     const run = () =>
       void loadGoalContexts(db, { includeArchived: true, dayEndsAt })
         .then((list) => alive && setCtx(list.find((c) => c.goal.id === goalId) ?? null))
-        .catch(() => undefined);
+        .catch(logCatch('history.load'));
     run();
     const off = onDbChanged(run);
     return () => {

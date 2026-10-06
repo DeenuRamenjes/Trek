@@ -1,5 +1,7 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { NotificationsRow } from '../../src/features/settings/NotificationsRow';
+import { shareErrorLog } from '../../src/services/errorLog';
 import { getDb } from '../../src/db/client';
 import { seedDemoData } from '../../src/db/seed';
 import { AppText, Button, Card, Screen } from '../../src/ui/components';
@@ -12,6 +14,14 @@ function localToday(): string {
 }
 
 export default function SettingsScreen() {
+  const [logNote, setLogNote] = useState<string | null>(null);
+  const exportLog = async () => {
+    try {
+      setLogNote((await shareErrorLog()) ? null : strings.errorLog.empty);
+    } catch {
+      setLogNote(strings.errorLog.failed);
+    }
+  };
   return (
     <Screen edges={['top', 'left', 'right']}>
       <AppText variant="display">{strings.tabs.settings}</AppText>
@@ -53,6 +63,19 @@ export default function SettingsScreen() {
         />
       </Card>
       <NotificationsRow />
+      <Card>
+        <AppText variant="headline" accessibilityRole="header">
+          {strings.errorLog.about}
+        </AppText>
+        <Button
+          variant="secondary"
+          label={strings.errorLog.export}
+          icon="document-text-outline"
+          accessibilityLabel={strings.errorLog.export}
+          onPress={() => void exportLog()}
+        />
+        <AppText tone="secondary">{logNote ?? strings.errorLog.exportHint}</AppText>
+      </Card>
       {__DEV__ ? (
         <Card>
           <AppText variant="headline">{strings.devTools.title}</AppText>

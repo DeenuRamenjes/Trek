@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { useEffect } from 'react';
 import { onDbChanged } from '../../db/changes';
 import { refreshWidgets } from '../../services/widgetBridge';
@@ -11,7 +12,7 @@ export function useWidgetSync(): void {
   const { today } = useLogicalToday();
 
   useEffect(() => {
-    void refreshWidgets().catch(() => undefined);
+    void refreshWidgets().catch(logCatch('widgets.sync'));
   }, [today]);
 
   useEffect(() => {
@@ -20,7 +21,7 @@ export function useWidgetSync(): void {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         timer = null;
-        void refreshWidgets().catch(() => undefined);
+        void refreshWidgets().catch(logCatch('widgets.sync'));
       }, DEBOUNCE_MS);
     };
     const offDb = onDbChanged(schedule);

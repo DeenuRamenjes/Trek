@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { useCallback, useRef, useState } from 'react';
 import type { TrekDb } from '../../db/client';
 import { deleteLog, listLogs, restoreLog, upsertLog } from '../../db/repositories';
@@ -33,7 +34,7 @@ export function useCheckOff({ db, contexts, today, weekStart }: Args) {
   /** Runs `fn` after every earlier act/undo finished, so rapid taps never read a stale log. */
   const serial = useCallback(<T,>(fn: () => Promise<T>): Promise<T> => {
     const next = chain.current.then(fn, fn);
-    chain.current = next.catch(() => undefined);
+    chain.current = next.catch(logCatch('checkOff'));
     return next;
   }, []);
 

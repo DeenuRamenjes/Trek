@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Switch, View } from 'react-native';
 import { strings } from '../../strings/en';
@@ -21,7 +22,7 @@ export function WidgetSettingsScreen() {
 
   function change(next: typeof widget) {
     update({ widget: next });
-    void refreshWidgets().catch(() => undefined);
+    void refreshWidgets().catch(logCatch('widgets.settings'));
   }
 
   return (

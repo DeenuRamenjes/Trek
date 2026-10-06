@@ -1,3 +1,4 @@
+import { installErrorLogging } from '../src/services/errorLog';
 import '../src/services/notifications/setup';
 import '../src/services/notifications/backgroundTask';
 import { Stack } from 'expo-router';
@@ -18,8 +19,10 @@ import { useSettings } from '../src/features/settings/settingsStore';
 import { MotionConfig, useReduceMotion } from '../src/ui/motion';
 import { AnimatedSplash } from '../src/ui/splash/AnimatedSplash';
 import { ThemedSystemBars } from '../src/ui/ThemedSystemBars';
+import { ErrorBoundary } from '../src/ui/ErrorBoundary';
 import { ThemeProvider } from '../src/ui/ThemeProvider';
 
+installErrorLogging();
 void SplashScreen.preventAutoHideAsync();
 
 function NotificationsLifecycle() {
@@ -64,12 +67,14 @@ export default function RootLayout() {
         <ThemeProvider mode={theme === 'system' ? undefined : theme} accent={accent}>
           <MotionConfig />
           <ThemedSystemBars />
-          <DbProvider>
-            <NotificationsLifecycle />
-            <LockGate promptReady={splashDone}>
-              <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
-            </LockGate>
-          </DbProvider>
+          <ErrorBoundary>
+            <DbProvider>
+              <NotificationsLifecycle />
+              <LockGate promptReady={splashDone}>
+                <Stack screenOptions={{ headerShown: false, animation: reduce ? 'none' : 'default' }} />
+              </LockGate>
+            </DbProvider>
+          </ErrorBoundary>
           {splashDone ? null : <AnimatedSplash onFinish={() => setSplashDone(true)} />}
           <PrivacyOverlay />
         </ThemeProvider>

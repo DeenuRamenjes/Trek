@@ -1,3 +1,4 @@
+import { logCatch, logError } from '../errorLog';
 import * as BackgroundTask from 'expo-background-task';
 import { notificationsAdapter } from './adapter';
 import { createRuntimeLifecycle } from './runtime';
@@ -10,9 +11,10 @@ notificationsAdapter.defineTask(BACKGROUND_TASK, async () => {
   try {
     await createRuntimeLifecycle().runCycle();
     return BackgroundTask.BackgroundTaskResult.Success;
-  } catch {
+  } catch (e) {
+    void logError('backgroundTask', e);
     return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });
 
-void notificationsAdapter.registerBackgroundTask(BACKGROUND_TASK, BACKGROUND_INTERVAL_MIN).catch(() => undefined);
+void notificationsAdapter.registerBackgroundTask(BACKGROUND_TASK, BACKGROUND_INTERVAL_MIN).catch(logCatch('backgroundTask.register'));

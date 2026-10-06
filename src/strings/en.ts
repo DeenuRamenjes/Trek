@@ -8,6 +8,16 @@ export const strings = {
     errorTitle: 'Trek could not start',
     errorBody: 'Restart the app. If this keeps happening, export the error log from Settings.',
   },
+  errorLog: {
+    boundaryTitle: 'Something went wrong',
+    boundaryBody: 'Trek hit an unexpected problem. Your data is safe. You can try again.',
+    retry: 'Try again',
+    about: 'About',
+    export: 'Export error log',
+    exportHint: 'Shared only when you choose. Nothing is sent automatically.',
+    empty: 'No errors have been logged.',
+    failed: 'Could not export the error log.',
+  },
   notifications: {
     markDone: 'Mark done',
     snooze: 'Snooze 10 min',

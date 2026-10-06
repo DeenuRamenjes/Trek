@@ -1,3 +1,4 @@
+import { logCatch } from '../errorLog';
 import { getDb, type TrekDb } from '../../db/client';
 import { useSettings } from '../../features/settings/settingsStore';
 import { onActionsApplied, processPendingActions } from '../actionQueueProcessor';
@@ -14,8 +15,8 @@ const reconcileSerialized = coalesce(() => {
 
 // After actions are applied (notification response, widget): refresh reminders and widgets.
 onActionsApplied(() => {
-  void reconcileSerialized().catch(() => undefined);
-  void refreshWidgets().catch(() => undefined);
+  void reconcileSerialized().catch(logCatch('reconcile'));
+  void refreshWidgets().catch(logCatch('widgets.refresh'));
 });
 
 /** Wires the lifecycle to the real db, settings store and adapter. */

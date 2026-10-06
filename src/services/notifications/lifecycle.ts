@@ -1,3 +1,4 @@
+import { logCatch, logError } from '../errorLog';
 export type LifecycleDeps = {
   processActions: () => Promise<unknown>;
   reconcile: () => Promise<unknown>;
@@ -51,7 +52,8 @@ export function createLifecycle(deps: LifecycleDeps) {
       if (last !== zone) deps.setLastKnownTimeZone(zone);
       await runCycle();
       if (changed) await deps.refreshWidgets();
-    } catch {
+    } catch (e) {
+      void logError('lifecycle.foreground', e);
       // Best effort; the next foreground or background run retries.
     }
   }
@@ -60,7 +62,7 @@ export function createLifecycle(deps: LifecycleDeps) {
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
-      void Promise.resolve(deps.reconcile()).catch(() => undefined);
+      void Promise.resolve(deps.reconcile()).catch(logCatch('reconcile'));
     }, deps.debounceMs ?? 500);
   }
 

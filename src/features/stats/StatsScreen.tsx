@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -61,7 +62,7 @@ export function StatsScreen() {
       for (const l of goalLinks) (links[l.groupId] ??= []).push(l.goalId);
       if (alive) setLoaded({ contexts, groups, links });
     };
-    const run = () => void load().catch(() => undefined);
+    const run = () => void load().catch(logCatch('stats.load'));
     run();
     const off = onDbChanged(run);
     return () => {

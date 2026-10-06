@@ -1,3 +1,4 @@
+import { logCatch, logError } from '../errorLog';
 import { router, type Href } from 'expo-router';
 import { getDb, type TrekDb } from '../../db/client';
 import { useSettings } from '../../features/settings/settingsStore';
@@ -24,7 +25,8 @@ async function handle(response: NotificationResponse): Promise<void> {
   try {
     const db: TrekDb = getDb();
     await recordResponse(db, response, useSettings.getState().settings.dayEndsAt);
-  } catch {
+  } catch (e) {
+    void logError('notifications.response', e);
     // Row stays pending (or was never enqueued); it is retried on next start or foreground.
   }
 }
@@ -47,7 +49,7 @@ notificationsAdapter.defineTask(RESPONSE_TASK, async ({ data, error }) => {
   if (response) await handle(response);
 });
 
-void notificationsAdapter.registerResponseTask(RESPONSE_TASK).catch(() => undefined);
+void notificationsAdapter.registerResponseTask(RESPONSE_TASK).catch(logCatch('notifications.registerResponseTask'));
 void notificationsAdapter
   .setCategory(GOAL_CATEGORY, [
     { identifier: MARK_DONE_ACTION, buttonTitle: strings.notifications.markDone, options: { opensAppToForeground: false } },

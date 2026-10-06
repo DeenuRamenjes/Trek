@@ -1,3 +1,4 @@
+import { logCatch } from '../../services/errorLog';
 import { format } from 'date-fns';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -51,7 +52,7 @@ export function TodayScreen() {
     const load = () =>
       loadGoalContexts(db, { dayEndsAt }).then(
         (c) => alive && setContexts(c),
-        () => undefined,
+        logCatch('today.load'),
       );
     void load();
     const off = onDbChanged(() => void load());
