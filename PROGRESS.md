@@ -390,3 +390,7 @@ Everything listed in `docs/DEVICE-CHECKLIST.md` (grouped by platform, with steps
 | Splash and all animations respect reduce motion | Pass (jest); device pending | `AnimatedSplash.test.tsx` "finishes immediately without an overlay under reduce motion", `primitives.test.tsx`, `TabBar.test.tsx`, `GestureSheet.test.tsx`; DEVICE-CHECKLIST.md "Reduce motion" |
 | App works fully in airplane mode | Pending | No network dependency exists (no network libraries, no calls); DEVICE-CHECKLIST.md "airplane mode" |
 | Stats under 500 ms on a mid-range Android (Phase 13 target) | Pending | Jest model time 225 to 265 ms; DEVICE-CHECKLIST.md "Stats render time" |
+
+### Phase 13 final review notes
+- The error boundary sits inside `ThemeProvider`; a render crash in the providers above it (ThemeProvider, MotionConfig, ThemedSystemBars, AnimatedSplash, PrivacyOverlay) is not shown on the fallback screen, but the global handler still logs it as fatal.
+- `errorLog.append` rewrites the live file on each entry (bounded by the 250 KB live-file cap); acceptable for an error log.
