@@ -44,7 +44,8 @@
         {
           "faceIDPermission": "Trek uses Face ID to unlock the app."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": false

@@ -3,6 +3,7 @@ import { NotificationsRow } from '../../src/features/settings/NotificationsRow';
 import { getDb } from '../../src/db/client';
 import { seedDemoData } from '../../src/db/seed';
 import { AppText, Button, Card, Screen } from '../../src/ui/components';
+import { exportPocXlsx } from '../../src/services/xlsx/exportPoc';
 import { strings } from '../../src/strings/en';
 
 function localToday(): string {
@@ -59,6 +60,12 @@ export default function SettingsScreen() {
             label={strings.devTools.seed}
             accessibilityLabel={strings.devTools.seed}
             onPress={() => void seedDemoData(getDb(), { today: localToday() })}
+          />
+          <Button
+            variant="secondary"
+            label={strings.devTools.exportXlsx}
+            accessibilityLabel={strings.devTools.exportXlsx}
+            onPress={() => void exportPocXlsx()}
           />
         </Card>
       ) : null}

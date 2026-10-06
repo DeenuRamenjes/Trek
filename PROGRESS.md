@@ -192,6 +192,33 @@ These review notes were deferred to the phase that builds on the affected code. 
   - Extend the emoji scan to accessibility labels and placeholders.
   - Optional color tests: a positive large-text AA case, tone 99 and `toneOf` at 0 and 100, and a mid-grey `readableOn` case.
 
+## Phase 10 verification (run on 2026-10-06)
+- `npx tsc --noEmit`: 0 errors.
+- `npx jest`: Test Suites: 77 passed, 77 total; Tests: 687 passed, 687 total.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist`: exported, `_expo/static/js/ios/entry-701bc8089d4a34e7f4ffd2f7386b1972.hbc (8.5MB)`.
+- `EXPO_OFFLINE=1 CI=1 npx expo export --platform android --output-dir dist`: exported, `_expo/static/js/android/entry-dafb9fd0cecf0b9757461a2a8a8a4438.hbc (8.7MB)`.
+- Automated re-read checks (`src/services/xlsx/__tests__/workbookPoc.test.ts`): formulas with cached values, `@` format on ID/date/time cells, dataBar and colorScale (checked in the reloaded model and in the sheet XML via jszip), frozen row 1, protection without a password hash, `_Meta.format = trek-xlsx`.
+
+## Phase 10 decisions
+- Dashboard formulas use only COUNTIFS, SUMIFS, AVERAGEIFS, IFERROR; each carries `cachedValue` from the app.
+- Conditional formats (dataBar, colorScale) go through `makeCfRule({ innerXml })` with a small tested builder, `src/services/xlsx/cfRules.ts` (deterministic, escaped). Reason: @office-kit/xlsx 0.23.4 declares `addDataBarRule` and `addColorScaleRule` in its types but ships neither at runtime, and `innerXml` is the only hook. The user approved this.
+- Sheet protection: `ws.sheetProtection = makeSheetProtection({ sheet: true })` (no password). `protectSheet` is declared but not exported at runtime.
+- TextDecoder patch (`src/services/xlsx/textCodec.ts`): the library calls `new TextDecoder('latin1')` at module load; Expo's TextDecoder only accepts utf-8 and throws `RangeError: Unknown encoding: latin1`. The patch wraps the global only when that probe throws and must be imported before any @office-kit/xlsx import.
+- Jest ESM mapping (node project in `jest.config.js`): `.mjs` goes through babel-jest, `moduleNameMapper` maps `@office-kit/xlsx/*` to `dist/*.mjs` (the package has only an `import` export condition), and `@office-kit` is allowed in `transformIgnorePatterns`.
+- `expo-sharing` config plugin was added to `app.json` by `expo install`.
+
+## Phase 10 library API notes for Phase 11
+- Subpaths only, no root barrel: `/io` (`loadWorkbook`, `workbookToBytes`, `fromArrayBuffer`), `/workbook` (`createWorkbook`, `addWorksheet`, `iterWorksheets`), `/worksheet` (`setCell`, `iterCells`, `setFreezePanes`, `setColumnWidths`, `addConditionalFormatting`, `makeCfRule`, `makeConditionalFormatting`, `makeSheetProtection`), `/cell` (`makeFormula(text, { cachedValue })`, `getFormulaText`, `getCachedFormulaValue`, `isFormulaValue`, `isEmptyCell`), `/styles` (`setCellNumberFormat`, `getCellNumberFormat`, `FORMAT_TEXT`).
+- Formula text is stored without a leading `=`.
+- Do not trust the `.d.ts` for the `add*Rule` helpers; check the runtime exports.
+- Reading: `ws.views[0].pane` (state, xSplit, ySplit), `ws.sheetProtection`, `ws.conditionalFormatting[].rules[].type`.
+- Import of converted values (decimal times, date serials) is not exercised yet.
+
+## Phase 10 device verification pending (run in Phase 13)
+- Exported xlsx opens in Excel, Google Sheets and the iOS Files preview with correct values, data bar and color scale.
+- The share sheet works on iOS and Android (Settings, Developer, Export xlsx test file).
+- The TextDecoder latin1 patch lets @office-kit/xlsx load on Hermes.
+
 ## Phase 9 verification (run on 2026-10-05)
 - `npx tsc --noEmit`: exit 0, no errors.
 - `npx jest`: Test Suites: 75 passed, 75 total; Tests: 676 passed, 676 total (after final-review fixes).

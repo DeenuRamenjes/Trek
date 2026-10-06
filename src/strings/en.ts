@@ -503,6 +503,7 @@ export const strings = {
     designPreview: 'Design preview',
     motionCheck: 'Motion check',
     seed: 'Seed demo data',
+    exportXlsx: 'Export xlsx test file',
     open: (name: string) => `Open ${name}`,
   },
   insights: {
