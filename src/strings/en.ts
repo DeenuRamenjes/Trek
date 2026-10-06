@@ -427,6 +427,7 @@ export const strings = {
     folderSet: 'Backups are also copied to your chosen folder.',
     folderRevoked: 'Access to the backup folder was lost. Choose the folder again to keep copying backups there.',
     restoreTitle: 'Restore from auto-backup',
+    preImportPrefix: (label: string) => `Before import, ${label}`,
     restoreEmpty: 'No automatic backups yet',
     restoreItem: (label: string, kb: string) => `${label} (${kb} KB)`,
     restoreItemLabel: (label: string) => `Restore backup from ${label}`,

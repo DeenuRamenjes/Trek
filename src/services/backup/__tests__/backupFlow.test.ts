@@ -5,6 +5,8 @@ import { seedDemoData } from '../../../db/seed';
 import { DEFAULT_SETTINGS, type Settings } from '../../../domain/settings';
 import {
   listAutoBackups,
+  preImportFilesToPrune,
+  writePreImportBackup,
   runAutoBackup,
   SafAccessError,
   takeSafRevokedNotice,
@@ -21,6 +23,7 @@ function memFs() {
   const files = new Map<string, string>();
   const calls: string[] = [];
   const saf: string[] = [];
+  const safFiles = new Map<string, string>();
   let safFails = false;
   const fs: BackupFs = {
     async writeLocal(name, text) {
@@ -39,9 +42,17 @@ function memFs() {
     async writeSaf(_folder, name) {
       if (safFails) throw new SafAccessError();
       saf.push(name);
+      safFiles.set(`uri/${name}`, name);
+    },
+    async listSaf() {
+      if (safFails) throw new SafAccessError();
+      return [...safFiles].map(([uri, name]) => ({ uri, name }));
+    },
+    async deleteSaf(uri) {
+      safFiles.delete(uri);
     },
   };
-  return { fs, files, calls, saf, failSaf: () => (safFails = true) };
+  return { fs, files, calls, saf, safFiles, failSaf: () => (safFails = true) };
 }
 
 function settingsHolder(initial: Settings = DEFAULT_SETTINGS) {
@@ -88,6 +99,40 @@ describe('auto-backup', () => {
     expect((await run(new Date(2026, 9, 2, 4, 0, 0))).status).toBe('written');
   }, 60000);
 
+  it('two concurrent triggers write one file', async () => {
+    const m = memFs();
+    const s = settingsHolder();
+    const deps = { db, fs: m.fs, settings: s.h.settings, updateSettings: s.update, now: new Date(2026, 9, 1, 9, 0, 0), appVersion: '1' };
+    const [a, b] = await Promise.all([runAutoBackup(deps), runAutoBackup(deps)]);
+    expect(a).toBe(b);
+    expect(m.files.size).toBe(1);
+  }, 60000);
+
+  it('prunes the SAF mirror to the newest 7', async () => {
+    const m = memFs();
+    const s = settingsHolder({ ...DEFAULT_SETTINGS, androidBackupFolderUri: 'content://tree/x' });
+    for (let day = 1; day <= 9; day++) {
+      await runAutoBackup({ db, fs: m.fs, settings: s.h.settings, updateSettings: s.update, now: new Date(2026, 9, day, 9, 0, 0), appVersion: '1' });
+    }
+    expect(m.safFiles.size).toBe(7);
+    expect([...m.safFiles.values()].sort()[0]).toBe('trek-backup-20261003-090000.json');
+  }, 60000);
+
+  it('prunes pre-import backups to the newest 7 and lists them', async () => {
+    const m = memFs();
+    const s = settingsHolder();
+    for (let day = 1; day <= 9; day++) {
+      await writePreImportBackup({ db, fs: m.fs, settings: s.h.settings, now: new Date(2026, 9, day, 10, 0, 0), appVersion: '1' });
+    }
+    const names = [...m.files.keys()].sort();
+    expect(names).toHaveLength(7);
+    expect(names[0]).toBe('trek-preimport-20261003-100000.json');
+    expect(preImportFilesToPrune([...names, 'trek-backup-20260101-000000.json'])).toEqual([]);
+    const list = await listAutoBackups(m.fs);
+    expect(list).toHaveLength(7);
+    expect(list[0]).toEqual(expect.objectContaining({ kind: 'preImport', label: '9 Oct 2026, 10:00' }));
+  }, 60000);
+
   it('does nothing when disabled', async () => {
     const m = memFs();
     const s = settingsHolder({ ...DEFAULT_SETTINGS, autoBackupEnabled: false });
@@ -115,14 +160,19 @@ describe('auto-backup', () => {
     expect(m.files.size).toBe(2);
   }, 60000);
 
-  it('lists auto-backups newest first and ignores other files', async () => {
+  it('lists auto and pre-import backups newest first and ignores other files', async () => {
     const m = memFs();
     m.files.set('trek-backup-20261001-090000.json', 'aaaa');
     m.files.set('trek-backup-20261003-090000.json', 'bb');
     m.files.set('trek-preimport-20261003-100000.json', 'c');
+    m.files.set('notes.txt', 'x');
     const list = await listAutoBackups(m.fs);
-    expect(list.map((i) => i.name)).toEqual(['trek-backup-20261003-090000.json', 'trek-backup-20261001-090000.json']);
-    expect(list[0].label).toBe('3 Oct 2026, 09:00');
+    expect(list.map((i) => i.name)).toEqual([
+      'trek-preimport-20261003-100000.json',
+      'trek-backup-20261003-090000.json',
+      'trek-backup-20261001-090000.json',
+    ]);
+    expect(list[1].label).toBe('3 Oct 2026, 09:00');
   });
 });
 

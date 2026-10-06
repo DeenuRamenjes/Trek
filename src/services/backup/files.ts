@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import * as DocumentPicker from 'expo-document-picker';
 import { Directory, File, Paths } from 'expo-file-system';
-import { StorageAccessFramework, writeAsStringAsync } from 'expo-file-system/legacy';
+import { deleteAsync, StorageAccessFramework, writeAsStringAsync } from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 import { getDb } from '../../db/client';
@@ -51,6 +51,17 @@ export const expoBackupFs: BackupFs = {
     } catch {
       throw new SafAccessError();
     }
+  },
+  async listSaf(folderUri) {
+    try {
+      const uris = await StorageAccessFramework.readDirectoryAsync(folderUri);
+      return uris.map((uri) => ({ uri, name: decodeURIComponent(uri).split(/[/:]/).pop() ?? uri }));
+    } catch {
+      throw new SafAccessError();
+    }
+  },
+  async deleteSaf(uri) {
+    await deleteAsync(uri, { idempotent: true });
   },
 };
 

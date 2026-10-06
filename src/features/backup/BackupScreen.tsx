@@ -35,6 +35,7 @@ export function BackupScreen() {
   const [notice, setNotice] = useState<Notice>(null);
   const [preview, setPreview] = useState<ValidatedImport | null>(null);
   const [busy, setBusy] = useState(false);
+  const [restoreKey, setRestoreKey] = useState(0);
   const folder = settings.androidBackupFolderUri;
 
   // A revoked SAF grant is cleared by the daily backup or detected here.
@@ -57,6 +58,7 @@ export function BackupScreen() {
     setBusy(true);
     try {
       await exportKinds([kind]);
+      setRestoreKey((k) => k + 1);
       setNotice({ kind: 'info', text: t.exportDone });
     } catch {
       setNotice({ kind: 'error', text: t.exportFailed });
@@ -66,6 +68,7 @@ export function BackupScreen() {
   }
 
   async function openPreview(load: () => Promise<Uint8Array | string | null>) {
+    if (busy) return;
     setNotice(null);
     try {
       const input = await load();
@@ -82,6 +85,7 @@ export function BackupScreen() {
     try {
       await applyValidatedImport(preview, mode, skip);
       setPreview(null);
+      setRestoreKey((k) => k + 1);
       setNotice({ kind: 'info', text: t.importDone });
     } catch {
       setNotice({ kind: 'error', text: t.importFailed });
@@ -171,7 +175,7 @@ export function BackupScreen() {
         ) : null}
       </Card>
 
-      <RestoreList onPick={(name) => void openPreview(() => readAutoBackup(name))} />
+      <RestoreList refreshKey={restoreKey} disabled={busy} onPick={(name) => void openPreview(() => readAutoBackup(name))} />
 
       <Card>
         <AppText variant="headline">{t.importTitle}</AppText>
