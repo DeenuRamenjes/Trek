@@ -4,6 +4,7 @@ import { logicalToday } from '../../domain/dayBoundary';
 import type { Settings } from '../../domain/settings';
 import { buildWidgetSnapshot } from '../../domain/widgetSnapshot';
 import { loadGoalContexts } from '../../features/goals/goalContexts';
+import { strings } from '../../strings/en';
 import { buildColors } from '../../ui/tokens';
 import type { WidgetColors, WidgetPayload, WidgetPendingAction, WidgetsAdapter } from './adapter';
 
@@ -46,13 +47,17 @@ function parseAction(raw: unknown): WidgetPendingAction | null {
 export function createWidgetBridge(deps: WidgetBridgeDeps) {
   const now = deps.now ?? (() => new Date());
 
-  /** Moves widget-recorded taps into pending_actions. Ids are tap-generated, so re-import is a no-op. */
-  async function importWidgetActions(): Promise<number> {
-    const raws = await deps.adapter.readPendingActions();
-    let n = 0;
-    for (const raw of raws) {
+  async function readActions(): Promise<WidgetPendingAction[]> {
+    const out: WidgetPendingAction[] = [];
+    for (const raw of await deps.adapter.readPendingActions()) {
       const a = parseAction(raw);
-      if (!a) continue;
+      if (a) out.push(a);
+    }
+    return out;
+  }
+
+  async function importActions(list: WidgetPendingAction[]): Promise<void> {
+    for (const a of list) {
       await enqueueAction(deps.db, {
         id: a.id,
         source: 'widget',
@@ -64,9 +69,14 @@ export function createWidgetBridge(deps: WidgetBridgeDeps) {
         createdAt: now().toISOString(),
         processedAt: null,
       });
-      n++;
     }
-    return n;
+  }
+
+  /** Moves widget-recorded taps into pending_actions. Ids are tap-generated, so re-import is a no-op. */
+  async function importWidgetActions(): Promise<number> {
+    const list = await readActions();
+    await importActions(list);
+    return list.length;
   }
 
   async function buildPayload(): Promise<WidgetPayload> {
@@ -86,13 +96,26 @@ export function createWidgetBridge(deps: WidgetBridgeDeps) {
       snapshot,
       colors: resolveWidgetColors(s.accentColor),
       hideGoalNames: s.widget.hideGoalNames,
+      labels: {
+        hiddenName: strings.widgetSettings.hiddenName,
+        empty: strings.widgetSettings.empty,
+        done: strings.widgetSettings.a11yDone,
+        of: strings.widgetSettings.a11yOf,
+        percent: strings.widgetSettings.a11yPercent,
+      },
       pendingActions: [],
     };
   }
 
   async function refreshWidgets(): Promise<void> {
-    await importWidgetActions();
-    await deps.adapter.pushSnapshot(await buildPayload());
+    const first = await readActions();
+    await importActions(first);
+    const payload = await buildPayload();
+    // A tap can land while the snapshot is built; the push replaces the widget props, so carry
+    // taps not yet imported forward. The next refresh imports them (ids make that idempotent).
+    const seen = new Set(first.map((a) => a.id));
+    const late = (await readActions()).filter((a) => !seen.has(a.id));
+    await deps.adapter.pushSnapshot({ ...payload, pendingActions: late });
   }
 
   return { importWidgetActions, buildPayload, refreshWidgets };

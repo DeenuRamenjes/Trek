@@ -119,3 +119,40 @@ it('duplicate delivery is applied once on both platforms', async () => {
   await processPendingActions(db, NOW);
   expect((await r.listLogs(db, { goalId: goal.id }))[0].value).toBe(2);
 });
+
+it('two taps on a 2-slot goal complete it with no orphan logs', async () => {
+  const goal = await r.createGoal(db, { name: 'Pills', trackingType: 'check' }, TODAY);
+  await r.addScheduleVersion(db, goal.id, TODAY, { scheduleType: 'daily', scheduleDays: 127 }, [
+    { weekday: 0, time: '20:00' },
+    { weekday: 0, time: '08:00' },
+  ]);
+  const b = bridge();
+  const first = (await b.buildPayload()).snapshot.items[0];
+  expect(first.slotId).not.toBeNull();
+  const { handler } = androidHandler(['s1', 's2']);
+  await handler(click({ goalId: goal.id, date: TODAY, action: 'done', slotId: first.slotId }));
+  const mid = pushed.at(-1)!.snapshot;
+  expect(mid.items[0]).toMatchObject({ status: 'partial', progress: 0.5 });
+  expect(mid.items[0].slotId).not.toBe(first.slotId);
+  await handler(click({ goalId: goal.id, date: TODAY, action: 'done', slotId: mid.items[0].slotId }));
+  const logs = await r.listLogs(db, { goalId: goal.id });
+  expect(logs).toHaveLength(2);
+  expect(logs.every((l) => l.slotId !== null)).toBe(true);
+  expect(pushed.at(-1)!.snapshot).toMatchObject({ done: 1, total: 1 });
+});
+
+it('ios tap landing during the snapshot build is carried forward, then imported', async () => {
+  const goal = await r.createGoal(db, { name: 'Alpha', trackingType: 'check' }, TODAY);
+  const a = { id: 'w:a', goalId: goal.id, slotId: null, date: TODAY, action: 'done' };
+  const late = { id: 'w:late', goalId: goal.id, slotId: null, date: TODAY, action: 'done' };
+  let reads = 0;
+  adapter.readPendingActions = jest.fn(async () => (++reads === 1 ? [a] : [a, late]));
+  await bridge().refreshWidgets();
+  expect(pushed[0].pendingActions).toEqual([late]);
+  expect((await r.listUnprocessed(db)).map((x) => x.id)).toEqual(['w:a']);
+  // Next refresh: the widget still holds both; both are imported once.
+  adapter.readPendingActions = jest.fn(async () => [a, late]);
+  await bridge().refreshWidgets();
+  expect((await r.listUnprocessed(db)).map((x) => x.id).sort()).toEqual(['w:a', 'w:late']);
+  expect(pushed[1].pendingActions).toEqual([]);
+});

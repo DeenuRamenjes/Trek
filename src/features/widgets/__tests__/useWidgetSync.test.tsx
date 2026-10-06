@@ -30,3 +30,13 @@ it('refreshes on mount, on debounced db change, and on rollover', async () => {
   });
   expect(refresh.mock.calls.length).toBeGreaterThanOrEqual(3);
 });
+
+it('refreshes when widget group or hide-names settings change', async () => {
+  await renderHook(() => useWidgetSync());
+  refresh.mockClear();
+  await act(async () => {
+    useSettings.setState({ settings: { ...useSettings.getState().settings, widget: { hideGoalNames: true } } });
+    jest.advanceTimersByTime(600);
+  });
+  expect(refresh).toHaveBeenCalledTimes(1);
+});

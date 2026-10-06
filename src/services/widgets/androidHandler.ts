@@ -42,7 +42,7 @@ export function createAndroidWidgetHandler(deps: AndroidHandlerDeps) {
           source: 'widget',
           goalId: d.goalId,
           date: d.date,
-          slotId: null,
+          slotId: typeof d.slotId === 'string' ? d.slotId : null,
           action,
           value: null,
           createdAt: now().toISOString(),

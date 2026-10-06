@@ -1,4 +1,4 @@
-import { dayStatus } from './dayStatus';
+import { dayStatus, slotsForDate } from './dayStatus';
 import { isDue } from './scheduleEngine';
 import type { GoalContext, Log } from './types';
 
@@ -17,6 +17,8 @@ export type WidgetItem = {
   progress: number;
   /** True for count goals: a tap increments instead of marking done. */
   increment: boolean;
+  /** Next undone slot (by time) of a slotted check goal; null otherwise. A tap logs against it. */
+  slotId: string | null;
 };
 
 export type WidgetSnapshot = {
@@ -35,6 +37,15 @@ export type WidgetSnapshotInput = {
   hideGoalNames: boolean;
 };
 
+function nextUndoneSlot(ctx: GoalContext, logs: Log[], today: string): string | null {
+  if (ctx.goal.trackingType !== 'check') return null;
+  const slots = [...slotsForDate(ctx, today)].sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : a.id < b.id ? -1 : 1));
+  const next = slots.find(
+    (s) => !logs.some((l) => l.goalId === ctx.goal.id && l.date === today && l.slotId === s.id && l.status === 'done'),
+  );
+  return next?.id ?? null;
+}
+
 const ORDER: Record<WidgetItemStatus, number> = { partial: 0, pending: 1, done: 2 };
 
 export function buildWidgetSnapshot(input: WidgetSnapshotInput): WidgetSnapshot {
@@ -51,6 +62,7 @@ export function buildWidgetSnapshot(input: WidgetSnapshotInput): WidgetSnapshot 
       status: info.status,
       progress: info.status === 'done' ? 1 : info.ratio,
       increment: ctx.goal.trackingType === 'count',
+      slotId: nextUndoneSlot(ctx, input.logs, input.today),
       sort: ctx.goal.sortOrder,
     });
   }

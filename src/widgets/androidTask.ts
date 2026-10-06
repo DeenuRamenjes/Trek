@@ -1,4 +1,6 @@
+import { migrate } from 'drizzle-orm/expo-sqlite/migrator';
 import { getDb } from '../db/client';
+import migrations from '../db/migrations/migrations';
 import { newId } from '../db/ids';
 import { useSettings } from '../features/settings/settingsStore';
 import { processPendingActions } from '../services/actionQueueProcessor';
@@ -10,8 +12,17 @@ import { renderAndroidWidget, TAP_ACTION } from './androidWidget';
 /** Production wiring of the Android widget task handler. */
 export function createAndroidTaskHandler() {
   // Built on the first event so importing the entry never opens the database.
-  let handler: ReturnType<typeof build> | null = null;
-  return (event: Parameters<ReturnType<typeof build>>[0]) => (handler ??= build())(event);
+  // Migrations run first: after an app update the widget task can fire before the app ever opens.
+  let ready: Promise<ReturnType<typeof build>> | null = null;
+  return async (event: Parameters<ReturnType<typeof build>>[0]) => {
+    ready ??= migrate(getDb(), migrations).then(build);
+    try {
+      await (await ready)(event);
+    } catch (e) {
+      ready = null;
+      throw e;
+    }
+  };
 }
 
 function build() {

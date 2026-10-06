@@ -27,7 +27,7 @@ export function useWidgetSync(): void {
     const offSettings = useSettings.subscribe((state, prev) => {
       const a = state.settings;
       const b = prev.settings;
-      if (a.dayEndsAt !== b.dayEndsAt || a.accentColor !== b.accentColor) schedule();
+      if (a.dayEndsAt !== b.dayEndsAt || a.accentColor !== b.accentColor || a.widget.groupId !== b.widget.groupId || a.widget.hideGoalNames !== b.widget.hideGoalNames) schedule();
     });
     return () => {
       if (timer) clearTimeout(timer);

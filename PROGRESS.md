@@ -195,7 +195,7 @@ These review notes were deferred to the phase that builds on the affected code. 
 
 ## Phase 12 verification (run on 2026-10-06)
 - `npx tsc --noEmit`: exit 0, no errors.
-- `npx jest`: Test Suites: 86 passed, 86 total; Tests: 750 passed, 750 total.
+- `npx jest`: Test Suites: 86 passed, 86 total; Tests: 753 passed, 753 total (after final-review fixes).
 - Scratch prebuild (copy of the repo, node_modules symlinked, deleted afterwards): `EXPO_OFFLINE=1 CI=1 npx expo prebuild --no-install --clean --platform ios`: "Finished prebuild", exit 0. Generated `ios/ExpoWidgetsTarget` (bundle id `com.deenuramenjes.trek.widget`, App Group `group.com.deenuramenjes.trek` in the entitlements).
 - Scratch prebuild `--platform android`: "Finished prebuild", exit 0. Generated `widget/TrekWidget.java` and `res/xml/widgetprovider_trekwidget.xml` (targetCell 2x2, maxResize 320dp x 160dp, resizeMode horizontal|vertical).
 - `EXPO_OFFLINE=1 CI=1 npx expo export --platform ios --output-dir dist; rm -rf dist`: Exported: dist.
@@ -206,10 +206,12 @@ These review notes were deferred to the phase that builds on the affected code. 
 - `@expo/ui` (a dependency of `expo-widgets`) is approved as an implied peer; it is imported only by the iOS widget definition (`src/widgets/iosWidget.tsx`) and added to package.json as `~57.0.21`.
 - Widget ids: widget name `TrekWidget` on both platforms; iOS widget bundle id `com.deenuramenjes.trek.widget`; App Group `group.com.deenuramenjes.trek`. Plugins are configured with full options (bare strings crash config loading).
 - `package.json` main is now `index.ts`, which registers the widget renderers and the Android task handler (needed for headless runs) before `expo-router/entry`.
-- Snapshot items carry `increment` (true for count goals); the tap action is `increment` for count goals and `done` otherwise. Taps use `slotId: null`.
+- Snapshot items carry `increment` (true for count goals); the tap action is `increment` for count goals and `done` otherwise. 
 - iOS row tap: the Button `onPress` handler appends `{ id: 'w:<random>', ... }` to `props.pendingActions` (no crypto in the widget runtime); the app imports them on refresh (Phase 12 Task 2). Android tap: the task handler inserts `w:<uuid>` (expo-crypto) into pending_actions, processes the queue, then refreshes.
 - Android picks the small layout (ring + count) below 250dp wide and the medium layout (ring + up to 4 rows) above it.
-- The iOS widget copy ("Goal", "Nothing due today") is inline because the layout function is serialized into the extension runtime and cannot import the strings file.
+- iOS widget copy comes from `payload.labels` (built from `strings.widgetSettings`) because the layout function is serialized into the extension runtime and cannot import the strings file.
+- Final-review fixes: snapshot items carry `slotId` (next undone slot by time for slotted check goals) and both widgets pass it on tap; `refreshWidgets` re-reads iOS props after building the snapshot and carries taps not yet imported into the pushed `pendingActions`; the Android task handler runs drizzle migrations before first use; `useWidgetSync` also watches `widget.groupId` and `widget.hideGoalNames`.
+- iOS widget props (including `pendingActions`) are cleared on the next push. Re-import idempotency relies on `enqueueAction` being `onConflictDoNothing` on id and on `pending_actions` never being pruned; if pruning is ever added, a re-import could re-apply an action.
 
 ## Phase 12 device verification pending (run in Phase 13)
 - Both widgets render and resize (iOS small and medium; Android 2x2 to 4x2), light and dark.

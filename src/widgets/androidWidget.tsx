@@ -63,7 +63,7 @@ export function TrekAndroidWidget({ payload, mode, widthDp }: { payload: WidgetP
                 <FlexWidget
                   key={item.goalId}
                   clickAction={TAP_ACTION}
-                  clickActionData={{ goalId: item.goalId, date: snap.date, action: item.increment ? 'increment' : 'done' }}
+                  clickActionData={{ goalId: item.goalId, date: snap.date, action: item.increment ? 'increment' : 'done', slotId: item.slotId }}
                   accessibilityLabel={item.name ? strings.widgetSettings.rowLabel(item.name, percent) : strings.widgetSettings.rowLabelHidden(percent)}
                   style={{ width: 'match_parent', height: 36, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, borderRadius: 12, backgroundColor: hex(c.surface) }}
                 >

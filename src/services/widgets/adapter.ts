@@ -26,11 +26,15 @@ export type WidgetPendingAction = {
   action: 'done' | 'increment';
 };
 
+export type WidgetLabels = { hiddenName: string; empty: string; done: string; of: string; percent: string };
+
 /** What both platforms render: the snapshot plus resolved token colors for both themes. */
 export type WidgetPayload = {
   snapshot: WidgetSnapshot;
   colors: { light: WidgetColors; dark: WidgetColors };
   hideGoalNames: boolean;
+  /** Copy for the iOS layout, which cannot import the strings file (it runs serialized in the extension). */
+  labels: WidgetLabels;
   /** Always empty when pushed; the iOS handler appends taps here. */
   pendingActions: WidgetPendingAction[];
 };

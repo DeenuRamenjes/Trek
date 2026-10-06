@@ -20,8 +20,8 @@ import type { WidgetPayload } from '../services/widgets/adapter';
  *
  * The 'widget' directive makes babel-preset-expo serialize this function and run it inside the
  * widget extension's JS runtime, so it must not reference anything outside its own body. The
- * Expo UI components and modifiers are provided there as globals. Copy therefore stays inline
- * (it mirrors strings.widgetSettings in src/strings/en.ts). A row tap appends an action to
+ * Expo UI components and modifiers are provided there as globals. Copy comes from props.labels
+ * (built from strings.widgetSettings). A row tap appends an action to
  * props.pendingActions (via the Button's onPress, which Expo UI maps to the native button target); the app imports those into pending_actions (id `w:<random>`).
  */
 export function TrekIosWidget(props: WidgetPayload, environment: WidgetEnvironment) {
@@ -39,7 +39,7 @@ export function TrekIosWidget(props: WidgetPayload, environment: WidgetEnvironme
       modifiers={[
         gaugeStyle('circularCapacity'),
         tint(c.accent),
-        accessibilityLabel(snap.done + ' of ' + snap.total + ' done'),
+        accessibilityLabel(snap.done + ' ' + props.labels.of + ' ' + snap.total + ' ' + props.labels.done),
       ]}
     />
   );
@@ -48,7 +48,7 @@ export function TrekIosWidget(props: WidgetPayload, environment: WidgetEnvironme
 
   const rows = snap.items.slice(0, 4).map((item) => {
     const percent = Math.round(item.progress * 100);
-    const name = item.name ?? 'Goal';
+    const name = item.name ?? props.labels.hiddenName;
     return (
       <Button
         key={item.goalId}
@@ -57,13 +57,13 @@ export function TrekIosWidget(props: WidgetPayload, environment: WidgetEnvironme
             {
               id: makeId(),
               goalId: item.goalId,
-              slotId: null,
+              slotId: item.slotId ?? null,
               date: snap.date,
               action: item.increment ? 'increment' : 'done',
             },
           ]),
         })}
-        modifiers={[buttonStyle('plain'), accessibilityLabel(name + ', ' + percent + ' percent')]}
+        modifiers={[buttonStyle('plain'), accessibilityLabel(name + ', ' + percent + ' ' + props.labels.percent)]}
       >
         <HStack spacing={8}>
           <Gauge
@@ -78,7 +78,7 @@ export function TrekIosWidget(props: WidgetPayload, environment: WidgetEnvironme
     );
   });
 
-  const empty = <Text modifiers={[font({ size: 14 }), foregroundStyle(c.textSecondary)]}>Nothing due today</Text>;
+  const empty = <Text modifiers={[font({ size: 14 }), foregroundStyle(c.textSecondary)]}>{props.labels.empty}</Text>;
 
   return (
     <HStack
